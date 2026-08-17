@@ -163,6 +163,11 @@ jobs:
       - name: Publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This job never checks the code out — it only collects what the others
+          # built — so there is no git repository here for the cli to read the
+          # remote from. Without being told, every call ends at
+          # "fatal: not a git repository".
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
           set -e
