@@ -1,4 +1,5 @@
 import UIKit
+import UniformTypeIdentifiers
 import WebKit
 
 /* The screen: the interface, the player over it when a film is on, and the notice
@@ -95,6 +96,17 @@ final class ShellViewController: UIViewController {
         } else if let handler = handler {
             let scripts = WKUserContentController()
             scripts.add(handler, name: "wis")
+            /* The app's own data, handed over before the page runs. It is kept here
+               rather than in the web view because this interface is served over a
+               scheme of its own, and storage belonging to such a scheme is not
+               persisted at all — favourites and history went with the app. */
+            scripts.addUserScript(
+                WKUserScript(
+                    source: "window.__wisStore = \(Bridge.savedStore());",
+                    injectionTime: .atDocumentStart,
+                    forMainFrameOnly: true
+                )
+            )
             // WiSNative, in the shape the page already expects — see
             // renderer/bridge-android.js, which is written against exactly this.
             scripts.addUserScript(
@@ -135,6 +147,21 @@ final class ShellViewController: UIViewController {
         // A film should not be interrupted by the screen going out.
         UIApplication.shared.isIdleTimerDisabled = true
         web.load(URLRequest(url: target))
+    }
+
+    /* ------------------------------------------------------- choosing a file */
+
+    /* The system's own chooser, opened from here rather than by the page. A file
+     * input in a page is given an accept list, and that list is what sends the
+     * chooser to photos and video — there is no system type for a .srt, so nothing
+     * offered there could be picked. This one opens in Files. */
+    func pickSubtitle() {
+        let types: [UTType] = [.plainText, .text, .data]
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
+        picker.allowsMultipleSelection = false
+        picker.delegate = self
+        picker.modalPresentationStyle = .formSheet
+        present(picker, animated: true)
     }
 
     /* ---------------------------------------------------------- the way out */
@@ -313,4 +340,25 @@ final class AssetHandler: NSObject, WKURLSchemeHandler {
     }
 
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
+}
+
+/* The chooser's own end of it. The file is read here and handed to the page,
+ * which parses it, draws it and keeps it for the film on screen. */
+extension ShellViewController: UIDocumentPickerDelegate {
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+        let name = url.lastPathComponent
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let text = (try? String(contentsOf: url, encoding: .utf8))
+                ?? (try? String(contentsOf: url, encoding: .isoLatin1))
+                ?? ""
+            DispatchQueue.main.async {
+                self.tellPage(
+                    "window.__wisSubtitleFile && window.__wisSubtitleFile("
+                        + Bridge.jsString(name) + ", " + Bridge.jsString(text) + ")"
+                )
+            }
+        }
+    }
 }

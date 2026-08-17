@@ -135,6 +135,27 @@ class Bridge(private val activity: MainActivity) {
         activity.runOnUiThread { activity.showNotice(text, labels) }
     }
 
+    /* ----------------------------------------------------------- app's own data */
+
+    /* Favourites, history, where a film was left off, subtitles added — the app's
+     * own data, kept by the app rather than by the web view. A web view's storage
+     * is tied to the origin its page came from and is not a promise; this is. */
+    @JavascriptInterface
+    fun storeRead(): String = activity.readStore()
+
+    @JavascriptInterface
+    fun storeWrite(json: String) {
+        activity.writeStore(json)
+    }
+
+    /* The chooser for a subtitle. Opened here rather than by the page, because a
+     * chooser built from an accept list lands in photos and video — and there is no
+     * system type for a .srt at all, so nothing in it could be picked. */
+    @JavascriptInterface
+    fun pickSubtitle() {
+        activity.runOnUiThread { activity.pickSubtitle() }
+    }
+
     /* Where HH3D lives moves about, so the page passes the address on once it
      * has resolved it; the request filter needs it to tell the watch page's own
      * weight apart from the stream. */

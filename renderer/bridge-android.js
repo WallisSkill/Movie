@@ -59,21 +59,59 @@
 
   /* ----------------------------------------------------------------- store */
 
-  // Small enough to keep in the WebView's own storage: the shell has nothing to
-  // add, and this way a reinstall of the UI keeps the favourites.
+  /* Kept by the shell, not by the web view.
+
+     Favourites, history, where a film was left off and every subtitle added are
+     the app's own data, and a web view is the wrong place for it: on iOS the
+     interface is served over a scheme of its own, and storage belonging to a
+     scheme like that is not persisted at all — everything was lost the moment the
+     app closed. The shell writes it where an app's data belongs, hands it back at
+     startup as window.__wisStore, and takes each change as it happens.
+
+     localStorage stays as the fallback for a shell too old to have been asked. */
   const STORE_KEY = 'wisfilm-store';
+  let held = null;
 
   const readStore = async () => {
-    try {
-      return JSON.parse(localStorage.getItem(STORE_KEY)) || {};
-    } catch {
-      return {};
+    if (held) return held;
+
+    if (window.__wisStore && typeof window.__wisStore === 'object') {
+      held = window.__wisStore;
+      return held;
     }
+
+    if (native.storeRead) {
+      try {
+        held = JSON.parse(native.storeRead() || '{}');
+        return held;
+      } catch {
+        /* unreadable: start clean rather than refuse to start */
+      }
+    }
+
+    try {
+      held = JSON.parse(localStorage.getItem(STORE_KEY)) || {};
+    } catch {
+      held = {};
+    }
+    return held;
   };
 
   const writeStore = async (data) => {
+    held = data;
+    const json = JSON.stringify(data);
+
+    if (native.storeWrite) {
+      try {
+        native.storeWrite(json);
+        return true;
+      } catch {
+        /* fall through to the web view's own storage */
+      }
+    }
+
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify(data));
+      localStorage.setItem(STORE_KEY, json);
       return true;
     } catch {
       return false;

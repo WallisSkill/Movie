@@ -39,10 +39,31 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         playerCss: (css) => send('playerCss', [css]),
         fullscreen: (on) => send('fullscreen', [!!on]),
         notice: (json) => send('notice', [json]),
+        // Read back at startup as window.__wisStore; only writing needs a message.
+        storeWrite: (json) => send('storeWrite', [json]),
+        pickSubtitle: () => send('pickSubtitle', []),
         hh3dHost: (origin) => send('hh3dHost', [origin]),
       };
     })()
     """
+
+    /* The app's own data — favourites, history, where a film was left off, the
+     * subtitles added. Kept here rather than in the web view: this interface is
+     * served over a scheme of its own, and web storage belonging to a scheme like
+     * that is not persisted, so everything went the moment the app closed. */
+    private static let storeKey = "wisfilm-store"
+
+    static func savedStore() -> String {
+        let saved = UserDefaults.standard.string(forKey: storeKey) ?? "{}"
+        // Whatever is handed to the page has to be something it can read.
+        guard let data = saved.data(using: .utf8),
+              (try? JSONSerialization.jsonObject(with: data)) != nil else { return "{}" }
+        return saved
+    }
+
+    static func saveStore(_ json: String) {
+        UserDefaults.standard.set(json, forKey: storeKey)
+    }
 
     static func jsString(_ value: String) -> String {
         let data = try? JSONSerialization.data(withJSONObject: [value], options: [])
@@ -103,6 +124,12 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         case "fullscreen":
             let on = (args.first as? Bool) ?? (intOf(args, 0) == 1)
             onMain { self.shell?.goFullscreen(on) }
+
+        case "storeWrite":
+            if let json = args.first as? String { Bridge.saveStore(json) }
+
+        case "pickSubtitle":
+            onMain { self.shell?.pickSubtitle() }
 
         case "notice":
             let json = (args.first as? String) ?? "{}"

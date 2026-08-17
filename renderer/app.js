@@ -647,38 +647,16 @@ async function render(view, push = true) {
    it is wanted at all. The films' own subtitles are not listed — they are not
    ours to keep or to change, and they will be on the page next time regardless. */
 
-/* Adding one from here, not only from the player. On a handset the player's own
-   way of attaching a subtitle is out of reach — which is what made it impossible
-   to add one at all on a phone — and this button always is. It needs a film on
-   screen to belong to, so it says so when there is none. */
-function subsAddRow() {
-  const row = el('div', 'subs-add');
-
-  const target = (playerCtx && playerCtx.movie) || state.lastFilm;
-  const pick = el('button', 'subs-btn use', '＋  Thêm tệp .srt / .vtt');
-  pick.disabled = !target;
-  pick.onclick = () => $('#sub-file').click();
-  row.appendChild(pick);
-
-  const hint = !target
-    ? 'Mở một phim trước, rồi quay lại đây để thêm phụ đề cho phim đó.'
-    : `Sẽ dùng cho: ${target.name}` + (playerCtx ? ' (đang xem)' : ' — bật khi mở lại phim');
-  row.appendChild(el('div', 'subs-hint', hint));
-
-  return row;
-}
-
 function renderSubsTab() {
   content.innerHTML = '';
   const saved = state.store.subs || [];
-  content.appendChild(subsAddRow());
 
   if (!saved.length) {
     content.appendChild(
       el(
         'div',
         'state',
-        'Chưa có phụ đề nào được thêm. Thêm tệp ở trên, hoặc gắn bằng nút CC của trình phát trong lúc xem — WiSFilm sẽ vẽ và lưu lại ở đây.'
+        'Chưa có phụ đề nào. Trong lúc xem phim, bấm CC trên trình phát để chọn tệp .srt — WiSFilm sẽ vẽ và lưu lại ở đây.'
       )
     );
     return;
@@ -1711,6 +1689,20 @@ function relayGuestKeys(view) {
           window.__wisKeys.push(token);
         }, true);
 
+        /* The player's own CC control is where a viewer goes to change a subtitle,
+           and what it opens is a list of captions the site will not show. So the
+           tap is taken and turned into what was actually wanted: a chooser for a
+           subtitle file. */
+        const CC = '.jw-settings-captions, .jw-submenu-captions, .jw-icon-cc,' +
+          ' [aria-label*="caption" i], [aria-label*="subtitle" i]';
+        addEventListener('click', (event) => {
+          const hit = event.target && event.target.closest && event.target.closest(CC);
+          if (!hit) return;
+          event.preventDefault();
+          event.stopPropagation();
+          window.__wisKeys.push('CC');
+        }, true);
+
         return 'listening';
       })()`
     )
@@ -1731,6 +1723,7 @@ function watchGuestKeys() {
       return; // the guest is busy; the next tick will do
     }
     (keys || []).forEach((key) => {
+      if (key === 'CC') return pickSubtitleFile();
       if (key === 'SUB_UP') return moveSubtitle(2);
       if (key === 'SUB_DOWN') return moveSubtitle(-2);
       if (key === 'SUB_EARLIER') return nudgeSubtitle(-0.5);
@@ -1964,6 +1957,27 @@ function rememberSubtitle(film, cues, name) {
   state.store.subs = [entry, ...kept].slice(0, 24);
   saveStore();
 }
+
+/* The CC control inside the video asks for this. On a shell the chooser is the
+   system's own — opened from native code, so it lands in Files rather than in the
+   photo library — and the file comes back through __wisSubtitleFile below. In a
+   window the page's own input does the same job. */
+function pickSubtitleFile() {
+  if (window.WiSGuest && window.WiSGuest.pickSubtitle) return window.WiSGuest.pickSubtitle();
+  $('#sub-file').click();
+}
+
+/* What the shells call once a file has been chosen. Same ending as the picker in a
+   window: parse it, draw it, keep it for this film. */
+window.__wisSubtitleFile = async (name, text) => {
+  if (!playerCtx) return;
+
+  const res = await window.WiSSubs.addFile(String(name || 'phụ đề'), String(text || ''));
+  if (!res.ok) return showPlayerNotice('Tệp này không đọc được (chỉ nhận .srt hoặc .vtt).');
+
+  rememberSubtitle();
+  showPlayerNotice(`Đã bật phụ đề từ tệp (${res.cues} dòng).`);
+};
 
 /* The picker's own end of it: read the file, draw it, keep it for this film. The
    input lives outside the tab so the tab can be redrawn without losing it. */

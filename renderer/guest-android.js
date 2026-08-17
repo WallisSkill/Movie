@@ -133,6 +133,18 @@
       return el;
     },
 
+    /* The chooser for a subtitle file, opened by the shell rather than by the page.
+       That is what puts it in Files instead of in the photo library — a picker
+       built from an accept list lands on photos and video, and cannot offer a .srt
+       at all, since the system has no type for one. */
+    pickSubtitle() {
+      try {
+        if (native.pickSubtitle) native.pickSubtitle();
+      } catch {
+        /* an older shell offers no chooser */
+      }
+    },
+
     /* Belt and braces on the way out of a film. Normally the element's own remove()
        tells the shell to take the picture down, but if that bookkeeping ever slips
        the picture stays over everything and the film cannot be left. Saying it

@@ -2,6 +2,7 @@ package com.wisfilm.app
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Build
 import android.graphics.Color
@@ -19,6 +20,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import org.json.JSONObject
 
 /* WiSFilm on Android.
  *
@@ -108,6 +110,66 @@ class MainActivity : Activity() {
         // A film should not be interrupted by the screen going out.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         view.loadUrl(url)
+    }
+
+    /* ---------------------------------------------------------- app's own data */
+
+    /* Kept here rather than in the web view: a web view's storage belongs to the
+     * origin its page came from and can go without warning, which is how a whole
+     * history of watching disappeared when the app was closed. */
+    private val prefs by lazy { getSharedPreferences("wisfilm", MODE_PRIVATE) }
+
+    fun readStore(): String = prefs.getString("store", "{}") ?: "{}"
+
+    fun writeStore(json: String) {
+        prefs.edit().putString("store", json).apply()
+    }
+
+    /* ------------------------------------------------------- choosing a file */
+
+    /* The system's own chooser, which opens in Files. A web page's file input is
+     * given an accept list, and the list is what sends it to photos and video —
+     * there is no system type for a .srt, so nothing there could be picked. */
+    fun pickSubtitle() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            putExtra(
+                Intent.EXTRA_MIME_TYPES,
+                arrayOf("text/plain", "text/vtt", "application/x-subrip", "application/octet-stream")
+            )
+        }
+        try {
+            startActivityForResult(intent, PICK_SUBTITLE)
+        } catch (err: Throwable) {
+            /* no chooser on this device: nothing to do but leave it alone */
+        }
+    }
+
+    @Deprecated("Plain Activity has no result API of its own; this is that API.")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        @Suppress("DEPRECATION")
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != PICK_SUBTITLE || resultCode != RESULT_OK) return
+
+        val uri = data?.data ?: return
+        val name = uri.lastPathSegment?.substringAfterLast('/') ?: "phu-de.srt"
+
+        // Reading a file is not work for the thread drawing the screen.
+        Thread {
+            val text = try {
+                contentResolver.openInputStream(uri)?.use { String(it.readBytes(), Charsets.UTF_8) } ?: ""
+            } catch (err: Throwable) {
+                ""
+            }
+            runOnUiThread {
+                host.evaluateJavascript(
+                    "window.__wisSubtitleFile && window.__wisSubtitleFile(" +
+                        "${JSONObject.quote(name)}, ${JSONObject.quote(text)})",
+                    null
+                )
+            }
+        }.start()
     }
 
     /* ------------------------------------------------------------ the way out */
@@ -312,6 +374,9 @@ class MainActivity : Activity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
+        // The request code the file chooser answers under.
+        private const val PICK_SUBTITLE = 4711
+
         private const val BACKDROP = 0xFF0B0D12.toInt()
         private const val NOTICE_BG = 0xE6141821.toInt()
 
