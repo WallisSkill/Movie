@@ -1632,12 +1632,22 @@ function mountPlayerView(url) {
     skinGuest(view);
     guardGuestSeek(view);
     applyGuestPrefs(view);
-    // The subtitle files belong to the guest, so the list can only be read once
-    // it is up; the choice made earlier carries over.
-    window.WiSSubs
-      .attach(view, state.store.subLang, playerCtx.movie.slug, state.store.subPos)
-      .then(() => restoreSubtitle())
-      .catch(() => {});
+
+    /* Subtitles are the player's own business on a handset and a television. Its
+       panel takes a file, names it and shows it, and the app has nothing to add —
+       what it had was a way of getting in the way: while WiSFilm drew a line of
+       its own it hid the player's, so a subtitle uploaded through that panel went
+       up behind a rule that kept it invisible. Here it does not draw, does not
+       hide anything, and does not put a track of its own on. */
+    if (!quietSubtitles()) {
+      // The subtitle files belong to the guest, so the list can only be read once
+      // it is up; the choice made earlier carries over.
+      window.WiSSubs
+        .attach(view, state.store.subLang, playerCtx.movie.slug, state.store.subPos)
+        .then(() => restoreSubtitle())
+        .catch(() => {});
+    }
+
     restorePosition(view);
     watchPlayback(view);
     // Nothing can be injected before this point: the guest is not there to
@@ -1645,7 +1655,7 @@ function mountPlayerView(url) {
     relayGuestKeys(view);
     freeFileInputs(view);
     watchGuestKeys();
-    watchAddedSubtitles();
+    if (!quietSubtitles()) watchAddedSubtitles();
     offerResume();
   });
 
@@ -1726,20 +1736,21 @@ function relayGuestKeys(view) {
           ' [aria-label*="caption" i], [aria-label*="subtitle" i],' +
           ' [aria-label*="phụ đề" i], [aria-label*="tiêu đề" i], [title*="phụ đề" i]';
 
-        /* Taken on the way down, not on the click: a touch opens the player's own
-           menu before a click is ever dispatched, and by then it is too late to
-           offer anything else. Whether this catches the control at all depends on
-           what the skin calls it, which is why the shells put a button of their own
-           over the picture rather than relying on this. */
-        ['pointerdown', 'click'].forEach((type) =>
-          addEventListener(type, (event) => {
-            const hit = event.target && event.target.closest && event.target.closest(CC);
-            if (!hit) return;
-            event.preventDefault();
-            event.stopPropagation();
-            if (type === 'pointerdown') window.__wisKeys.push('CC');
-          }, true)
-        );
+        /* Only in a window. On a handset and a television the player's own panel
+           takes a subtitle file, names it and shows it, and standing in front of
+           that button would take all of it away — which is exactly what happened.
+           There the tap goes where the viewer aimed it. */
+        if (${quietSubtitles() ? 'false' : 'true'}) {
+          ['pointerdown', 'click'].forEach((type) =>
+            addEventListener(type, (event) => {
+              const hit = event.target && event.target.closest && event.target.closest(CC);
+              if (!hit) return;
+              event.preventDefault();
+              event.stopPropagation();
+              if (type === 'pointerdown') window.__wisKeys.push('CC');
+            }, true)
+          );
+        }
 
         return 'listening';
       })()`
@@ -2338,8 +2349,11 @@ function buildSidebar() {
   [
     { kind: 'watching', label: 'Đang xem' },
     { kind: 'favorites', label: 'Yêu thích' },
-    // Subtitles brought in from outside are kept, so they need somewhere to live.
-    { kind: 'subs', label: 'Phụ đề' },
+    // Subtitles brought in from outside are kept, so they need somewhere to live —
+    // in a window. On a handset and a television the player keeps its own, and a
+    // tab that could only ever be empty would be pointing at something that is
+    // not there.
+    ...(quietSubtitles() ? [] : [{ kind: 'subs', label: 'Phụ đề' }]),
   ].forEach((entry) => {
     const btn = el('button', null, entry.label);
     btn.dataset.key = entry.kind + ':';
