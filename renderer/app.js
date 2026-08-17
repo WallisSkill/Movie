@@ -1735,21 +1735,23 @@ function relayGuestKeys(view) {
           ' [aria-label*="caption" i], [aria-label*="subtitle" i],' +
           ' [aria-label*="phụ đề" i], [aria-label*="tiêu đề" i], [title*="phụ đề" i]';
 
-        /* Only in a window. On a handset and a television the player's own panel
-           takes a subtitle file, names it and shows it, and standing in front of
-           that button would take all of it away — which is exactly what happened.
-           There the tap goes where the viewer aimed it. */
-        if (${quietSubtitles() ? 'false' : 'true'}) {
-          ['pointerdown', 'click'].forEach((type) =>
-            addEventListener(type, (event) => {
-              const hit = event.target && event.target.closest && event.target.closest(CC);
-              if (!hit) return;
-              event.preventDefault();
-              event.stopPropagation();
-              if (type === 'pointerdown') window.__wisKeys.push('CC');
-            }, true)
-          );
-        }
+        /* Taken on the way down, not on the click: a touch opens the player's own
+           menu before a click is ever dispatched, and by then it is too late to
+           offer anything else.
+
+           Everywhere, on the phone as well. Letting that tap through to the page
+           was tried in v1.1.5 and it took the chooser away — the panel it reaches
+           instead hands the file to the site's own subtitle engine, which nothing
+           here can see, and there was no way left to pick a file at all. */
+        ['pointerdown', 'click'].forEach((type) =>
+          addEventListener(type, (event) => {
+            const hit = event.target && event.target.closest && event.target.closest(CC);
+            if (!hit) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (type === 'pointerdown') window.__wisKeys.push('CC');
+          }, true)
+        );
 
         return 'listening';
       })()`
