@@ -1,0 +1,51 @@
+# The Xcode project is generated rather than committed: a .pbxproj is a large
+# machine-written file that cannot be reviewed or merged sensibly, and this is the
+# whole of what it would say. XcodeGen builds it from here on the runner.
+name: WiSFilm
+
+options:
+  bundleIdPrefix: com.wisfilm
+  deploymentTarget:
+    iOS: '14.0'
+  createIntermediateGroups: true
+
+targets:
+  WiSFilm:
+    type: application
+    platform: iOS
+    sources:
+      - path: WiSFilm
+      # The interface itself is the desktop app's, carried in as resources —
+      # copied here by the workflow before the project is generated.
+      - path: WiSFilm/www
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wisfilm.app
+        MARKETING_VERSION: '1.0.0'
+        CURRENT_PROJECT_VERSION: '1'
+        TARGETED_DEVICE_FAMILY: '1,2'
+        INFOPLIST_KEY_UILaunchStoryboardName: ''
+        SWIFT_VERSION: '5.0'
+        # Nothing here is signed on a runner; a device build needs an Apple account.
+        CODE_SIGNING_REQUIRED: 'NO'
+        CODE_SIGNING_ALLOWED: 'NO'
+        CODE_SIGN_IDENTITY: ''
+    info:
+      path: WiSFilm/Info.plist
+      properties:
+        CFBundleDisplayName: WiSFilm
+        UILaunchScreen: {}
+        UIViewControllerBasedStatusBarAppearance: false
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIRequiresFullScreen: true
+        # Playback continues when the picture is put away.
+        UIBackgroundModes:
+          - audio
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true

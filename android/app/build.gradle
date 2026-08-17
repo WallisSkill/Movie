@@ -23,6 +23,24 @@ android {
         }
     }
 
+    /* One codebase, two builds. A phone and a television want the same app but not
+       the same declaration of it: the television build asks for leanback outright
+       and says it needs no touchscreen, which is what puts it on the home row and
+       keeps it out of a phone's store listing. The mobile build is the plain one. */
+    flavorDimensions += 'device'
+
+    productFlavors {
+        mobile {
+            dimension 'device'
+            versionNameSuffix '-mobile'
+        }
+        tv {
+            dimension 'device'
+            versionNameSuffix '-tv'
+            applicationIdSuffix '.tv'
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

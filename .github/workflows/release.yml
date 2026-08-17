@@ -1,0 +1,137 @@
+name: Release
+
+# Everything a tag is for: the three platforms built from the same commit, and one
+# release carrying all of them. Nothing is signed — a device build needs the
+# owner's own certificate, which does not belong in a repository.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: Build installer and portable
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis portable --x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.exe
+          if-no-files-found: error
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Two flavours from one codebase: a phone build and a leanback one.
+      - name: Build both APKs
+        working-directory: android
+        run: gradle --no-daemon assembleMobileDebug assembleTvDebug
+
+      - name: Give them their names
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/mobile/debug/*.apk out/WiSFilm-android-phone.apk
+          cp android/app/build/outputs/apk/tv/debug/*.apk out/WiSFilm-androidtv.apk
+          ls -lh out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: out/*.apk
+          if-no-files-found: error
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tools
+        run: brew install xcodegen
+
+      # The interface is not kept twice in the tree: it is carried in here, the
+      # same way the Android build copies it into its assets.
+      - name: Carry the interface into the bundle
+        run: |
+          mkdir -p ios/WiSFilm/www
+          cp -R renderer ios/WiSFilm/www/renderer
+          cp -R shared ios/WiSFilm/www/shared
+
+      - name: Generate the project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -project WiSFilm.xcodeproj \
+            -scheme WiSFilm \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      # An unsigned .ipa is a zip with the app inside Payload/. It installs with a
+      # sideloading tool and the owner's own signature, not from here.
+      - name: Wrap it as an unsigned ipa
+        working-directory: ios
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/WiSFilm.app Payload/
+          zip -qry WiSFilm-ios-unsigned.ipa Payload
+          ls -lh WiSFilm-ios-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: ios/*.ipa
+          if-no-files-found: error
+
+  release:
+    needs: [windows, android, ios]
+    # A platform that fails to build should not keep the others from being released.
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: files
+
+      - run: find files -type f -exec ls -lh {} \;
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: files/**/*
+          generate_release_notes: false
+          body: |
+            WiSFilm — ứng dụng xem phim.
+
+            | Nền tảng | Tệp |
+            |---|---|
+            | Windows | `WiSFilm Setup *.exe` (bản cài) · `WiSFilm *.exe` (portable) |
+            | Android (điện thoại) | `WiSFilm-android-phone.apk` |
+            | Android TV | `WiSFilm-androidtv.apk` |
+            | iOS | `WiSFilm-ios-unsigned.ipa` (chưa ký) |
+
+            Bản iOS chưa ký: cài lên máy thật cần tự ký bằng tài khoản Apple.
