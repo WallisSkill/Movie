@@ -114,6 +114,14 @@ class Bridge(private val activity: MainActivity) {
         }
     }
 
+    /* Full screen on a handset means sideways with nothing else on the screen.
+     * Neither the orientation nor the system bars are a page's to decide, so the
+     * page asks and this does it. */
+    @JavascriptInterface
+    fun fullscreen(on: Boolean) {
+        activity.runOnUiThread { activity.goFullscreen(on) }
+    }
+
     @JavascriptInterface
     fun notice(json: String) {
         val parsed = try {

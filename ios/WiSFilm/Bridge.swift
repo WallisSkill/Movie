@@ -37,6 +37,7 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         playerRect: (l, t, w, h) => send('playerRect', [l, t, w, h]),
         playerEval: (id, code) => send('playerEval', [id, code]),
         playerCss: (css) => send('playerCss', [css]),
+        fullscreen: (on) => send('fullscreen', [!!on]),
         notice: (json) => send('notice', [json]),
         hh3dHost: (origin) => send('hh3dHost', [origin]),
       };
@@ -98,6 +99,10 @@ final class Bridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
 
         case "playerCss":
             if let css = args.first as? String { onMain { self.shell?.styleGuest(css) } }
+
+        case "fullscreen":
+            let on = (args.first as? Bool) ?? (intOf(args, 0) == 1)
+            onMain { self.shell?.goFullscreen(on) }
 
         case "notice":
             let json = (args.first as? String) ?? "{}"

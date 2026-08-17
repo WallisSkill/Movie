@@ -188,6 +188,10 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* Without this the item grows to fit its content instead of scrolling it, and
+     on a phone — where the shell is a column — the foot of every page ends up
+     past the bottom of the screen with no way to reach it. */
+  min-height: 0;
 }
 
 #topbar {
@@ -248,7 +252,11 @@ body {
 
 #content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  /* Momentum, so a flick behaves the way it does everywhere else on a phone. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 20px;
   position: relative;
 }
@@ -1187,7 +1195,7 @@ body {
 
 /* A phone turned on its side has almost no height: the episode list would eat
    the picture, so playing takes the whole screen and the list waits. */
-@media (max-width: 900px) and (orientation: landscape) {
+@media (orientation: landscape) and (max-height: 520px) {
   .player-side {
     display: none;
   }
@@ -1256,7 +1264,7 @@ body {
 /* A phone on its side gives the film the whole screen, so the picture must not be
    pushed down by a bar or in from the notch: the bar floats over it (see above)
    and the stage takes everything. */
-@media (max-width: 900px) and (orientation: landscape) {
+@media (orientation: landscape) and (max-height: 520px) {
   .player-stage {
     padding: 0;
   }

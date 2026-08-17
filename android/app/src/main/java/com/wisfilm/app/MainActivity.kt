@@ -2,6 +2,8 @@ package com.wisfilm.app
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.pm.ActivityInfo
+import android.os.Build
 import android.graphics.Color
 import android.os.Bundle
 import android.util.TypedValue
@@ -9,6 +11,8 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.webkit.WebView
 import android.widget.Button
@@ -129,6 +133,43 @@ class MainActivity : Activity() {
         params.topMargin = (top * d).toInt()
         view.layoutParams = params
         view.requestLayout()
+    }
+
+    /* ----------------------------------------------------------- full screen */
+
+    /* Sideways, and with the system bars out of the way. A television is already
+     * landscape and has no bars to hide, so it is left alone — the request only
+     * makes sense on something held in the hand. */
+    fun goFullscreen(on: Boolean) {
+        val leanback = packageManager.hasSystemFeature("android.software.leanback")
+
+        if (!leanback) {
+            requestedOrientation =
+                if (on) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                else ActivityInfo.SCREEN_ORIENTATION_USER
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val controller = window.insetsController
+            if (on) {
+                controller?.hide(WindowInsets.Type.systemBars())
+                controller?.systemBarsBehavior =
+                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            } else {
+                controller?.show(WindowInsets.Type.systemBars())
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility =
+                if (on) {
+                    View.SYSTEM_UI_FLAG_FULLSCREEN or
+                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                } else {
+                    View.SYSTEM_UI_FLAG_VISIBLE
+                }
+        }
     }
 
     /* --------------------------------------------------------------- notice */

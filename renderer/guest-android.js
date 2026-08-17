@@ -133,6 +133,16 @@
       return el;
     },
 
+    /* Full screen on a handset means sideways, and no system bars. Neither is
+       something a page can decide for itself, so the shell is asked. */
+    fullscreen(on) {
+      try {
+        if (native.fullscreen) native.fullscreen(!!on);
+      } catch {
+        /* an older shell stays as it is */
+      }
+    },
+
     // The notice lives inside the stage, which on Android is covered by a native
     // view, so it is drawn by the shell instead. The buttons call back by index.
     notice(text, labels) {

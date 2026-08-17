@@ -1415,7 +1415,7 @@ function showPlayerNotice(message, opts) {
 
   if (!message) {
     showPlayerNotice.actions = [];
-    if (window.WiSGuest) window.WiSGuest.notice('', []);
+    if (window.WiSGuest && window.WiSGuest.notice) window.WiSGuest.notice('', []);
     return notice.classList.add('hidden');
   }
 
@@ -1432,7 +1432,7 @@ function showPlayerNotice(message, opts) {
 
   // A native view covers the stage on Android, so the shell draws this one and
   // reports back which button was pressed.
-  if (window.WiSGuest) {
+  if (window.WiSGuest && window.WiSGuest.notice) {
     showPlayerNotice.actions = actions;
     window.WiSGuest.notice(message, actions.map((action) => action.label));
   }
@@ -2120,6 +2120,25 @@ function toggleFullscreen(force) {
 
   if (want && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
   if (!want && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+
+  /* A phone held upright has no business showing a film full screen: the picture
+     would be a strip across the middle of it. So on the shells, going full screen
+     turns the handset sideways and takes the system bars away — and coming out
+     gives both of those back. */
+  if (window.WiSGuest && window.WiSGuest.fullscreen) window.WiSGuest.fullscreen(want);
+
+  // Where the browser itself will take the instruction, it gets it too.
+  if (screen.orientation && screen.orientation.lock) {
+    if (want) {
+      screen.orientation.lock('landscape').catch(() => {});
+    } else if (screen.orientation.unlock) {
+      try {
+        screen.orientation.unlock();
+      } catch {
+        /* nothing to give back */
+      }
+    }
+  }
 
   const view = currentPlayerView();
   if (view) setTimeout(() => nudgeGuestResize(view), 200);

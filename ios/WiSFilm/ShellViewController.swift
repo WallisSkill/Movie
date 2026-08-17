@@ -43,6 +43,36 @@ final class ShellViewController: UIViewController {
     override var prefersStatusBarHidden: Bool { true }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
 
+    /* ----------------------------------------------------------- full screen */
+
+    /* A film full screen on a handset means sideways: upright it would be a strip
+     * across the middle of the glass. While that is on, this screen accepts only
+     * landscape, and iOS turns the picture to match. */
+    private var lockedLandscape = false
+
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        lockedLandscape ? .landscape : .allButUpsideDown
+    }
+
+    override var shouldAutorotate: Bool { true }
+
+    func goFullscreen(_ on: Bool) {
+        guard lockedLandscape != on else { return }
+        lockedLandscape = on
+
+        if #available(iOS 16.0, *) {
+            setNeedsUpdateOfSupportedInterfaceOrientations()
+            let wanted: UIInterfaceOrientationMask = on ? .landscape : .allButUpsideDown
+            guard let scene = view.window?.windowScene else { return }
+            scene.requestGeometryUpdate(.iOS(interfaceOrientations: wanted)) { _ in }
+        } else {
+            // The older way: tell the device which way up it now is.
+            let value = on ? UIInterfaceOrientation.landscapeRight.rawValue : UIInterfaceOrientation.portrait.rawValue
+            UIDevice.current.setValue(value, forKey: "orientation")
+            UIViewController.attemptRotationToDeviceOrientation()
+        }
+    }
+
     /* ------------------------------------------------------------ web views */
 
     private func makeWebView(playback: Bool, handler: Bridge?) -> WKWebView {
