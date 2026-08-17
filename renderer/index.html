@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    />
+    <title>WiSFilm</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="shell">
+      <aside id="sidebar">
+        <div class="brand">
+          <img class="brand-mark" src="logo.svg" alt="" />
+          <span class="brand-wis">WiS</span><span class="brand-film">Film</span>
+        </div>
+
+        <nav class="nav" id="nav-main"></nav>
+
+        <div class="nav-group">
+          <button class="nav-toggle" data-panel="genres">Thể loại <span>▾</span></button>
+          <div class="nav-sub" id="panel-genres"></div>
+        </div>
+
+        <div class="nav-group">
+          <button class="nav-toggle" data-panel="countries">Quốc gia <span>▾</span></button>
+          <div class="nav-sub" id="panel-countries"></div>
+        </div>
+
+        <nav class="nav" id="nav-local"></nav>
+
+        <!-- A catalogue of its own: standing in here points the search bar at it. -->
+        <div class="nav-block" id="nav-hh3d">
+          <nav class="nav" id="nav-hh3d-links"></nav>
+        </div>
+      </aside>
+
+      <main id="main">
+        <header id="topbar">
+          <button class="icon-btn" id="btn-back" title="Quay lại">←</button>
+          <div class="search-wrap">
+            <input
+              id="search"
+              type="search"
+              placeholder="Tìm phim theo tên… (Enter để tìm)"
+              autocomplete="off"
+            />
+          </div>
+          <h2 id="page-title"></h2>
+        </header>
+
+        <section id="content"></section>
+      </main>
+    </div>
+
+    <div id="player" class="hidden">
+      <div class="player-bar">
+        <button class="icon-btn" id="player-close" title="Đóng (Esc)">←</button>
+        <div class="player-title" id="player-title"></div>
+        <div class="player-ep" id="player-ep"></div>
+        <button class="icon-btn" id="player-intro" title="Tự động bỏ qua giới thiệu (HH3D)">⏭</button>
+        <button class="icon-btn" id="player-next" title="Tự động chuyển tập (HH3D)">⏩</button>
+        <button class="icon-btn" id="player-auto" title="Tự động kết nối lại khi mất kết nối">⟳</button>
+        <button class="icon-btn" id="player-fill" title="Lấp đầy khung / giữ nguyên khung hình">⤢</button>
+        <button class="icon-btn" id="player-full" title="Toàn màn hình (F)">⛶</button>
+      </div>
+      <div class="player-body">
+        <div class="player-stage" id="player-stage">
+          <div id="player-notice" class="hidden"></div>
+        </div>
+        <div class="player-side">
+          <div class="side-head" id="server-tabs"></div>
+          <div class="ep-list" id="ep-list"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- The catalogue reader is shared with the desktop main process, where it
+         is required instead. On Android these three stand in for the preload
+         and the <webview> that only Electron has; in Electron they find their
+         work already done and step aside. -->
+    <script src="../shared/catalog.js"></script>
+    <script src="bridge-android.js"></script>
+    <script src="guest-android.js"></script>
+    <script src="tv.js"></script>
+    <script src="subs.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

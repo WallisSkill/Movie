@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- No action bar and no title: the page draws its own chrome, and on a
+         television anything the system adds is wasted screen. -->
+    <style name="WiSFilmTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/backdrop</item>
+        <item name="android:colorBackground">@color/backdrop</item>
+        <item name="android:statusBarColor">@color/backdrop</item>
+        <item name="android:navigationBarColor">@color/backdrop</item>
+    </style>
+</resources>

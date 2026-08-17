@@ -1,0 +1,64 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.wisfilm.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.wisfilm.app"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            // Nothing here is shrunk: the app is one activity and a WebView, and
+            // the interface the page calls into must keep its method names.
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    // The UI is the desktop app's, copied in at build time rather than kept as a
+    // second copy in this tree — see syncWebAssets below.
+    sourceSets {
+        main {
+            assets.srcDirs = ['src/main/assets', "$buildDir/generated/webassets"]
+        }
+    }
+
+    packagingOptions {
+        resources.excludes += ['META-INF/*.kotlin_module']
+    }
+}
+
+tasks.register('syncWebAssets', Copy) {
+    description = 'Copies the shared renderer into the APK assets.'
+    from("$rootDir/../renderer") { into 'www/renderer' }
+    from("$rootDir/../shared") { into 'www/shared' }
+    into "$buildDir/generated/webassets"
+}
+
+tasks.named('preBuild') { dependsOn 'syncWebAssets' }
+
+dependencies {
+    /* One, and for a reason: assets loaded over file:// are a second-class
+       origin in a WebView — localStorage is unreliable there and a page's own
+       Content-Security-Policy stops trusting its own scripts. WebViewAssetLoader
+       serves the same files over an https origin the app owns, so the UI runs
+       under exactly the rules it was written for. */
+    implementation 'androidx.webkit:webkit:1.11.0'
+}

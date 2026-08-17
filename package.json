@@ -1,0 +1,40 @@
+{
+  "name": "wisfilm-desktop",
+  "version": "1.0.0",
+  "description": "WiSFilm - ung dung desktop xem phim dung API vsmov.com",
+  "main": "main.js",
+  "author": "local",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.wisfilm.desktop",
+    "productName": "WiSFilm",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "shared/**"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}

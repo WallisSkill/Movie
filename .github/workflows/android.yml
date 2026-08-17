@@ -1,0 +1,44 @@
+name: Android
+
+# Ubuntu runners ship a JDK and the Android SDK, which is exactly what the
+# machine this was written on does not have — so the APK is built here. One APK
+# serves both a phone and a television: the manifest declares LAUNCHER and
+# LEANBACK_LAUNCHER, and requires no touchscreen.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install platform and build tools
+        run: sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # The UI is not copied into this tree; the build pulls renderer/ and
+      # shared/ in as assets (see android/app/build.gradle, syncWebAssets).
+      - name: Build debug APK
+        working-directory: android
+        run: gradle --no-daemon assembleDebug
+
+      - name: Name the outputs
+        run: ls -lh android/app/build/outputs/apk/debug/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WiSFilm-android-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

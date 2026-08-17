@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Transparent ground on purpose: the mark has to sit on the dark sidebar,
+       on a taskbar and on a light installer background without a white plate. -->
+  <title>WiSFilm</title>
+
+  <defs>
+    <path
+      id="wf-star"
+      d="M0,-16 L3.76,-5.18 L15.22,-4.94 L6.09,1.98 L9.4,12.94 L0,6.4
+         L-9.4,12.94 L-6.09,1.98 L-15.22,-4.94 L-3.76,-5.18 Z"
+    />
+  </defs>
+
+  <g fill="none" stroke="#9b1c22" stroke-width="3" stroke-linejoin="round">
+    <circle cx="256" cy="256" r="244" stroke="#7d1519" stroke-width="7" />
+    <circle cx="256" cy="256" r="232" />
+    <circle cx="256" cy="256" r="200" />
+    <circle cx="256" cy="256" r="152" />
+    <circle cx="256" cy="256" r="108" />
+
+    <!-- The two triangles of the hexagram, points landing on the second ring. -->
+    <path d="M256,26 L455.19,371 L56.81,371 Z" stroke-width="9" />
+    <path d="M256,486 L56.81,141 L455.19,141 Z" stroke-width="9" />
+  </g>
+
+  <g fill="#9b1c22">
+    <use href="#wf-star" x="432" y="256" />
+    <use href="#wf-star" x="344" y="408.42" />
+    <use href="#wf-star" x="168" y="408.42" />
+    <use href="#wf-star" x="80" y="256" />
+    <use href="#wf-star" x="168" y="103.58" />
+    <use href="#wf-star" x="344" y="103.58" />
+
+    <!-- Eight-pointed burst at the centre. -->
+    <path
+      d="M256,212 L261.36,243.07 L287.11,224.89 L268.93,250.64 L300,256 L268.93,261.36
+         L287.11,287.11 L261.36,268.93 L256,300 L250.64,268.93 L224.89,287.11 L243.07,261.36
+         L212,256 L243.07,250.64 L224.89,224.89 L250.64,243.07 Z"
+      fill="#7d1519"
+    />
+  </g>
+</svg>

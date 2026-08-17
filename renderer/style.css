@@ -1,0 +1,1000 @@
+:root {
+  --bg: #0b0d12;
+  --bg-soft: #12151d;
+  --bg-card: #171b25;
+  --line: #232838;
+  --text: #e8ecf5;
+  --muted: #8b93a7;
+  --accent: #ff3d57;
+  --accent-soft: rgba(255, 61, 87, 0.14);
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------------ shell */
+
+#shell {
+  display: flex;
+  height: 100%;
+}
+
+#sidebar {
+  width: 218px;
+  flex: 0 0 218px;
+  background: var(--bg-soft);
+  border-right: 1px solid var(--line);
+  padding: 16px 10px;
+  overflow-y: auto;
+  /* A column, so the second catalogue can be sent to the foot of it. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* HH3D is a separate site with a catalogue of its own, so it sits apart from the
+   vsmov lists rather than among them. */
+#nav-hh3d {
+  margin-top: auto;
+  flex: 0 0 auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+#nav-hh3d .nav {
+  margin-bottom: 0;
+}
+
+/* Standing inside HH3D repoints the one search bar, so the bar shows it. */
+#search.scoped {
+  border-color: var(--accent);
+}
+
+.brand {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 4px 10px 20px;
+  display: flex;
+  align-items: center;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  margin-right: 9px;
+  /* The sigil is drawn in a deep red that goes muddy on the dark sidebar. */
+  filter: drop-shadow(0 0 6px rgba(155, 28, 34, 0.55)) saturate(1.35) brightness(1.5);
+}
+
+/* The seven colours run along the same diagonal the letters are tilted on, so
+   the sweep reads as part of the type rather than a band laid over it. */
+.brand-wis {
+  display: inline-block;
+  transform: skewX(-12deg) rotate(-5deg);
+  transform-origin: bottom left;
+  margin-right: 4px;
+  background: linear-gradient(
+    118deg,
+    #ff2d55 0%,
+    #ff9f0a 17%,
+    #ffd60a 34%,
+    #32d74b 50%,
+    #40c8e0 66%,
+    #0a84ff 83%,
+    #bf5af2 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-film {
+  color: var(--accent);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.nav button,
+.nav-toggle,
+.nav-sub button {
+  all: unset;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav button:hover,
+.nav-toggle:hover,
+.nav-sub button:hover {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.nav button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.nav-group {
+  margin-bottom: 6px;
+}
+
+.nav-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.nav-sub {
+  display: none;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 4px 0 0 6px;
+  padding-left: 6px;
+  border-left: 1px solid var(--line);
+}
+
+.nav-sub.open {
+  display: flex;
+}
+
+/* The panel is a capped-height flex column, so its many children would
+   otherwise be shrunk to a sliver instead of scrolling. */
+.nav button,
+.nav-sub button {
+  flex: 0 0 auto;
+}
+
+/* ----------------------------------------------------------------- topbar */
+
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.icon-btn {
+  all: unset;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 16px;
+  flex: 0 0 auto;
+}
+
+.icon-btn:hover {
+  background: var(--accent);
+}
+
+.search-wrap {
+  flex: 0 0 340px;
+}
+
+#search {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+  color: var(--text);
+  outline: none;
+  user-select: text;
+}
+
+#search:focus {
+  border-color: var(--accent);
+}
+
+#page-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  position: relative;
+}
+
+/* ------------------------------------------------------------------- grid */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  cursor: pointer;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-card);
+  transition: transform 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.card .poster {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  background: #0f1219;
+}
+
+.card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.78);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge.rate {
+  left: auto;
+  right: 6px;
+  top: 6px;
+  bottom: auto;
+  color: #ffd166;
+}
+
+/* What the collapsed duplicates left behind: season count and the prints that
+   exist for this title. */
+.badge.parts {
+  left: auto;
+  right: 6px;
+  color: #9fe0ff;
+}
+
+.badge.quality {
+  top: 6px;
+  bottom: auto;
+  color: #ffe08a;
+  letter-spacing: 0.3px;
+}
+
+.card .meta {
+  padding: 8px 9px 11px;
+}
+
+.card .name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card .sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* How long ago the newest episode landed — quieter than the title, since it is
+   read at a glance across the whole grid. */
+.card .stamp {
+  font-size: 11px;
+  color: var(--accent);
+  margin-top: 4px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------- pagination */
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 26px 0 10px;
+  color: var(--muted);
+}
+
+.pager button {
+  all: unset;
+  cursor: pointer;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.pager button:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+.pager button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ----------------------------------------------------------------- detail */
+
+/* The wide artwork fills the whole detail page behind the content. It bleeds
+   past the content padding, and the image is scaled up so the blur does not
+   expose translucent edges. */
+.detail-page {
+  position: relative;
+  min-height: 100%;
+}
+
+.detail-backdrop {
+  position: absolute;
+  inset: -20px -20px 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.detail-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.1);
+  filter: blur(10px) saturate(1.25);
+  opacity: 0.82;
+}
+
+/* Just enough veil to keep the text legible over a bright still. */
+.detail-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(11, 13, 18, 0.42) 0%,
+    rgba(11, 13, 18, 0.55) 45%,
+    rgba(11, 13, 18, 0.72) 100%
+  );
+}
+
+.detail-hero,
+.server-block {
+  position: relative;
+  z-index: 1;
+}
+
+.detail-hero {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+
+.detail-hero img {
+  width: 260px;
+  flex: 0 0 260px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+}
+
+.detail-info h1 {
+  margin: 0 0 6px;
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.detail-info .origin {
+  color: var(--muted);
+  font-size: 20px;
+  margin-bottom: 18px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.chip {
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.chip.hl {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.desc {
+  color: #c9d1e0;
+  font-size: 16.5px;
+  line-height: 1.65;
+  margin-bottom: 16px;
+  max-width: 900px;
+  user-select: text;
+}
+
+.credits {
+  font-size: 15px;
+  color: var(--muted);
+  max-width: 900px;
+  margin-bottom: 6px;
+  user-select: text;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin: 18px 0 4px;
+}
+
+.btn {
+  all: unset;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--accent);
+  font-weight: 700;
+}
+
+.btn.ghost {
+  background: var(--bg-card);
+  font-weight: 600;
+}
+
+.btn:hover {
+  filter: brightness(1.12);
+}
+
+.server-block,
+.cast-block {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 26px;
+}
+
+.server-block h3,
+.cast-block h3 {
+  font-size: 15px;
+  color: var(--muted);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* ------------------------------------------------------------------- cast */
+
+.cast-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.cast-card {
+  flex: 0 0 150px;
+  width: 150px;
+  padding: 14px 10px 16px;
+  border-radius: var(--radius);
+  background: rgba(23, 27, 37, 0.82);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.cast-card img {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  background: #1d2231;
+  margin-bottom: 10px;
+}
+
+.cast-name {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  /* Room for the longer names to wrap, so every "Diễn viên" label in the row
+     still sits on the same line. */
+  min-height: 2.6em;
+}
+
+.cast-role {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* ------------------------------------------------------------ season list */
+
+.ep-btn.season {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 104px;
+  padding: 9px 15px;
+}
+
+.season-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.season-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ep-btn.season.playing .season-note {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.ep-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ep-btn {
+  all: unset;
+  cursor: pointer;
+  flex: 0 0 auto;
+  min-width: 52px;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  font-size: 13px;
+}
+
+.ep-btn:hover {
+  background: var(--accent);
+}
+
+.ep-btn.playing {
+  background: var(--accent);
+  font-weight: 700;
+}
+
+/* ----------------------------------------------------------------- states */
+
+.state {
+  padding: 60px 10px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.state.error {
+  color: #ff8a95;
+}
+
+.spinner {
+  width: 26px;
+  height: 26px;
+  margin: 0 auto 14px;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ----------------------------------------------------------------- player */
+
+#player {
+  position: fixed;
+  inset: 0;
+  background: #05070b;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.player-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.player-title {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-ep {
+  color: var(--muted);
+  font-size: 13px;
+  margin-left: auto;
+}
+
+.player-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.player-stage {
+  flex: 1;
+  position: relative;
+  background: #000;
+  min-width: 0;
+}
+
+/* Absolute fill rather than height:100% — a percentage height would depend on
+   the flex parent already having a resolved height, and the guest page latches
+   onto whatever size it sees when it attaches.
+   display must stay flex: Electron stretches the internal guest iframe through
+   it, so overriding it to block leaves the guest stuck at 300x150 even though
+   the <webview> box itself measures correctly. */
+.player-stage webview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+/* The subtitle line itself is drawn inside the player's own frame — see subs.js
+   — so that whichever fullscreen the viewer reaches for, ours or the site's, the
+   text is part of what gets blown up rather than something layered over it. */
+
+/* Sits above the guest so a drop is visible without covering the picture, and
+   takes clicks: a drop offers the viewer something to do, not just news. */
+#player-notice {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  max-width: 80%;
+  padding: 8px 10px 8px 16px;
+  border-radius: 999px;
+  background: rgba(10, 12, 18, 0.92);
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #ffd9a0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#player-notice.hidden {
+  display: none;
+}
+
+#player-notice .notice-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#player-notice .notice-act {
+  all: unset;
+  flex: 0 0 auto;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+#player-notice .notice-act:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Immersive: the stage takes the whole screen, so the episode list goes. The bar
+   stays — it holds the way back out — but it rides on the picture, faint until
+   the pointer is near it, rather than taking a strip of the screen. */
+#player.immersive .player-side {
+  display: none;
+}
+
+#player.immersive .player-bar {
+  position: absolute;
+  z-index: 7;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-bottom: 0;
+  background: linear-gradient(to bottom, rgba(8, 10, 14, 0.9), rgba(8, 10, 14, 0));
+  opacity: 0.35;
+  transition: opacity 0.16s ease;
+}
+
+#player.immersive .player-bar:hover,
+#player.immersive .player-bar:focus-within {
+  opacity: 1;
+}
+
+.icon-btn.active {
+  background: var(--accent);
+}
+
+.player-side {
+  width: 264px;
+  flex: 0 0 264px;
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-soft);
+}
+
+.side-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.side-head button {
+  all: unset;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: var(--bg-card);
+  font-size: 12px;
+}
+
+.side-head button.active {
+  background: var(--accent);
+  font-weight: 700;
+}
+
+.ep-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2b3143;
+  border-radius: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* -------------------------------------------------------------- tab phụ đề */
+
+/* Rows, not cards: each one is a file with a few numbers and a few decisions
+   attached, which reads better as a line than as artwork. */
+.subs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 860px;
+}
+
+.subs-row {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+}
+
+.subs-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.subs-name {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.subs-film {
+  font-size: 12.5px;
+  color: var(--accent);
+}
+
+.subs-meta {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.subs-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.subs-btn {
+  all: unset;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.subs-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.subs-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.subs-btn.use {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.subs-btn.danger:hover {
+  border-color: #ff6b6b;
+  color: #ff9d9d;
+}
+
+/* What separates two uploads of the same release: the audio it carries, how many
+   sources back it, when it went up. Quieter than the title, read at a glance. */
+.card .stamp.variant {
+  color: #9fe0ff;
+  white-space: normal;
+}
+
+/* Several cards for one release stand a little apart from the rest of the grid. */
+.card.one-of-many {
+  outline: 1px solid rgba(159, 224, 255, 0.22);
+  outline-offset: -1px;
+}
+
+/* ---------------------------------------------------------------- trailer */
+
+/* Plays on its own when the page opens, so it is placed below the fold of the
+   hero rather than over it — visible on the way down to the cast, not in front
+   of the title. */
+.trailer {
+  margin: 22px 0 6px;
+}
+
+.trailer-head {
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.trailer-frame {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--line);
+}
+
+.trailer-frame webview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+/* A guest that goes fullscreen is promoted to the top layer, but the rule above
+   ("absolute, inside the frame") is more specific than the browser's own
+   fullscreen styling and wins — which pins the picture back inside its little
+   box. These put it over the window, and stop the frame clipping it. */
+.trailer-frame webview:fullscreen,
+.trailer-frame webview:-webkit-full-screen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2147483647 !important;
+}
+
+.trailer-frame:has(webview:fullscreen) {
+  overflow: visible !important;
+}

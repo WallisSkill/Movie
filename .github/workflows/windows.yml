@@ -1,0 +1,64 @@
+name: Windows
+
+# The desktop build is the one that already works locally; running it here as
+# well means a fresh machine can produce it without Node or Electron installed.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Check every script parses
+        run: |
+          node --check main.js
+          node --check preload.js
+          node --check shared/catalog.js
+          node --check renderer/app.js
+          node --check renderer/subs.js
+          node --check renderer/bridge-android.js
+          node --check renderer/guest-android.js
+          node --check renderer/tv.js
+
+      - name: Build installer and portable
+        env:
+          # Nothing here is signed, and letting the builder hunt for a certificate
+          # is a common way for this step to die on a runner.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          DEBUG: 'electron-builder'
+        run: |
+          npx electron-builder --win nsis portable --x64 2>&1 | Tee-Object -FilePath build.log
+        continue-on-error: true
+
+      - name: What the builder said
+        if: always()
+        run: |
+          if (Test-Path build.log) { Get-Content build.log -Tail 120 }
+          if (Test-Path dist) { Get-ChildItem dist | Select-Object Name,Length | Format-Table -AutoSize }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WiSFilm-windows-build-log
+          path: build.log
+          if-no-files-found: warn
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WiSFilm-windows
+          path: |
+            dist/*.exe
+            dist/*.exe.blockmap
+          if-no-files-found: error

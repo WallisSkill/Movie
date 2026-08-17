@@ -1,0 +1,30 @@
+# Build output and dependencies: rebuilt from source, and large.
+node_modules/
+dist/
+out/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/gradle/wrapper/gradle-wrapper.jar
+android/.idea/
+android/*.iml
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# iOS
+ios/build/
+ios/Pods/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+*.ipa
+
+# Local scratch and editor state
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
