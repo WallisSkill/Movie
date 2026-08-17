@@ -37,14 +37,19 @@ jobs:
       # piping a native tool's stderr through PowerShell turns each line into an
       # error record and fails the step even when the build worked, which is what
       # made this look broken before — and what the tolerated failure was hiding.
+      # --publish never: on a CI machine the builder decides it should upload the
+      # result to a GitHub release and fails for want of a token, after having
+      # written both executables. Nothing here publishes; the release workflow does.
       - name: Build installer and portable
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --win nsis portable --x64
+        run: npx electron-builder --win nsis portable --x64 --publish never
 
-      - name: What came out
-        if: always()
-        run: if (Test-Path dist) { Get-ChildItem dist -File | Select-Object Name,Length | Format-Table -AutoSize }
+      - name: Are both executables there?
+        run: |
+          $exes = @(Get-ChildItem dist -Filter *.exe -File -ErrorAction SilentlyContinue)
+          $exes | Select-Object Name,@{n='MB';e={[math]::Round($_.Length/1MB,1)}} | Format-Table -AutoSize
+          if ($exes.Count -lt 2) { throw "expected an installer and a portable build, found $($exes.Count)" }
 
       - uses: actions/upload-artifact@v4
         with:

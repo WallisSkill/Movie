@@ -6,10 +6,6 @@ name: Release
 on:
   push:
     tags: ['v*']
-    # Also on the branch, so a platform that stops compiling is found before a tag
-    # is cut rather than in the middle of publishing one. Only the release step
-    # below waits for a tag.
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -30,14 +26,20 @@ jobs:
       # PowerShell turns every line it writes into an error record and fails the
       # step even when the build succeeded — which is exactly what happened, and
       # why the other workflow only looked green: it tolerated the failure.
+      # --publish never is the whole fix: the builder sees a CI machine, decides it
+      # is meant to upload the result to a GitHub release, and fails for want of a
+      # token — after having written both executables. Publishing here is this
+      # workflow's own job, further down.
       - name: Build installer and portable
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --win nsis portable --x64
+        run: npx electron-builder --win nsis portable --x64 --publish never
 
-      - name: What came out
-        if: always()
-        run: if (Test-Path dist) { Get-ChildItem dist -File | Select-Object Name,Length | Format-Table -AutoSize }
+      - name: Are both executables there?
+        run: |
+          $exes = @(Get-ChildItem dist -Filter *.exe -File -ErrorAction SilentlyContinue)
+          $exes | Select-Object Name,@{n='MB';e={[math]::Round($_.Length/1MB,1)}} | Format-Table -AutoSize
+          if ($exes.Count -lt 2) { throw "expected an installer and a portable build, found $($exes.Count)" }
 
       - uses: actions/upload-artifact@v4
         with:
