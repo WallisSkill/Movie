@@ -144,9 +144,12 @@ class MainActivity : Activity() {
         val leanback = packageManager.hasSystemFeature("android.software.leanback")
 
         if (!leanback) {
+            /* Coming out goes back to upright rather than to whatever the handset
+               happens to be held at: the app is a column of lists and a detail page
+               read top to bottom, and a film is the only part of it that is not. */
             requestedOrientation =
                 if (on) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                else ActivityInfo.SCREEN_ORIENTATION_USER
+                else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

@@ -50,8 +50,13 @@ final class ShellViewController: UIViewController {
      * landscape, and iOS turns the picture to match. */
     private var lockedLandscape = false
 
+    /* A phone is held one way for a film and the other for everything else, so this
+     * screen accepts only one at a time: landscape while watching, upright once the
+     * film is closed. An iPad is big enough for either and is left to its own
+     * devices. */
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        lockedLandscape ? .landscape : .allButUpsideDown
+        guard UIDevice.current.userInterfaceIdiom == .phone else { return .all }
+        return lockedLandscape ? .landscape : .portrait
     }
 
     override var shouldAutorotate: Bool { true }
@@ -59,10 +64,11 @@ final class ShellViewController: UIViewController {
     func goFullscreen(_ on: Bool) {
         guard lockedLandscape != on else { return }
         lockedLandscape = on
+        guard UIDevice.current.userInterfaceIdiom == .phone else { return }
 
         if #available(iOS 16.0, *) {
             setNeedsUpdateOfSupportedInterfaceOrientations()
-            let wanted: UIInterfaceOrientationMask = on ? .landscape : .allButUpsideDown
+            let wanted: UIInterfaceOrientationMask = on ? .landscape : .portrait
             guard let scene = view.window?.windowScene else { return }
             scene.requestGeometryUpdate(.iOS(interfaceOrientations: wanted)) { _ in }
         } else {

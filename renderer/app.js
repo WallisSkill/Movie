@@ -1013,6 +1013,11 @@ function openPlayer(movie, servers, serverIndex, epIndex, opts) {
      covers the whole screen: to reach the subtitle tab a viewer has to close the
      film first, and the file they pick there still belongs to it. */
   if (!playerCtx.trailer) state.lastFilm = { slug: movie.slug, name: movie.name };
+
+  /* A film is watched sideways, always: that is the shape of a film. The rest of
+     the app is read upright, so leaving the player turns the handset back — see
+     closePlayer. On a television and in a window this asks for nothing. */
+  faceTheFilm(true);
   playerEl.classList.remove('hidden');
   $('#player-title').textContent = movie.name;
   drawPlayerSide();
@@ -2169,6 +2174,19 @@ $('#player-fill').onclick = () => {
   if (view) applyStretching(view);
 };
 
+/* Which way up the handset should be. Sideways while a film is on, upright for
+   everything else — the app is read in a column and a film is not. A television is
+   already landscape and a window has no orientation to speak of, so both are left
+   alone by the shells themselves. */
+function faceTheFilm(watching) {
+  if (window.WiSGuest && window.WiSGuest.fullscreen) window.WiSGuest.fullscreen(watching);
+
+  // Where the browser itself takes the instruction, it gets it too.
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock(watching ? 'landscape' : 'portrait').catch(() => {});
+  }
+}
+
 function toggleFullscreen(force) {
   const want = force === undefined ? !playerEl.classList.contains('immersive') : force;
   playerEl.classList.toggle('immersive', want);
@@ -2180,21 +2198,6 @@ function toggleFullscreen(force) {
      would be a strip across the middle of it. So on the shells, going full screen
      turns the handset sideways and takes the system bars away — and coming out
      gives both of those back. */
-  if (window.WiSGuest && window.WiSGuest.fullscreen) window.WiSGuest.fullscreen(want);
-
-  // Where the browser itself will take the instruction, it gets it too.
-  if (screen.orientation && screen.orientation.lock) {
-    if (want) {
-      screen.orientation.lock('landscape').catch(() => {});
-    } else if (screen.orientation.unlock) {
-      try {
-        screen.orientation.unlock();
-      } catch {
-        /* nothing to give back */
-      }
-    }
-  }
-
   const view = currentPlayerView();
   if (view) setTimeout(() => nudgeGuestResize(view), 200);
 }
@@ -2219,6 +2222,8 @@ function closePlayer() {
   window.WiSSubs.detach();
   dropPlayerView(); // tear the webview down so audio stops
   playerCtx = null;
+  // Out of the film is back to a column: the detail page is read upright.
+  faceTheFilm(false);
 }
 
 $('#player-close').onclick = closePlayer;
