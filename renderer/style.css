@@ -998,3 +998,212 @@ body {
 .trailer-frame:has(webview:fullscreen) {
   overflow: visible !important;
 }
+
+/* ------------------------------------------------------------ điện thoại */
+
+/* The layout above assumes a window: a column of navigation beside a grid, a
+   poster beside its details, an episode list beside the picture. None of that
+   fits a phone held in the hand, which is what the packaged builds run on. Below
+   this width everything becomes a single column, and the sidebar — the one part
+   with nowhere to go — lies down into a strip that scrolls sideways. */
+@media (max-width: 760px) {
+  #shell {
+    flex-direction: column;
+  }
+
+  #sidebar {
+    width: 100%;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    overflow-y: visible;
+    /* The panels open below the strip, so it must not clip them. */
+    position: relative;
+  }
+
+  .brand {
+    padding: 0 8px 0 0;
+    font-size: 19px;
+    flex: 0 0 auto;
+  }
+
+  .brand-mark {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    margin-right: 6px;
+  }
+
+  .nav,
+  #nav-hh3d .nav {
+    flex-direction: row;
+    margin-bottom: 0;
+    gap: 4px;
+    flex: 0 0 auto;
+  }
+
+  .nav button,
+  .nav-toggle {
+    padding: 7px 11px;
+    font-size: 13px;
+    flex: 0 0 auto;
+  }
+
+  /* Standing at the foot of a column means nothing in a row. */
+  #nav-hh3d {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    padding-left: 8px;
+    flex: 0 0 auto;
+  }
+
+  .nav-group {
+    margin-bottom: 0;
+    flex: 0 0 auto;
+  }
+
+  /* A drop-down rather than an inline block: there is no column to grow inside. */
+  .nav-sub.open {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 2px;
+    max-height: 50vh;
+    margin: 0;
+    padding: 8px 10px;
+    background: var(--bg-soft);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  #topbar {
+    gap: 8px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    flex: 1 1 200px;
+  }
+
+  #page-title {
+    order: 3;
+    flex: 1 1 100%;
+    font-size: 13px;
+  }
+
+  #content {
+    padding: 12px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 10px;
+  }
+
+  .card .name {
+    font-size: 12px;
+  }
+
+  .card .sub,
+  .card .stamp {
+    font-size: 10.5px;
+  }
+
+  /* The hero: poster over its details, not beside them. */
+  .detail-hero,
+  .hero {
+    flex-direction: column;
+  }
+
+  /* The poster is the first thing on the page and must not be the whole of it:
+     without a cap it fills the screen and the title is a scroll away. */
+  .detail-hero img {
+    width: 46%;
+    max-width: 190px;
+    align-self: center;
+  }
+
+  .detail-info h1 {
+    font-size: 21px;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .trailer-frame {
+    max-width: 100%;
+  }
+
+  .cast-card {
+    width: 108px;
+  }
+
+  /* The player: picture first, then the episodes under it rather than beside. */
+  .player-body {
+    flex-direction: column;
+  }
+
+  .player-side {
+    width: 100%;
+    flex: 0 0 auto;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    max-height: 38vh;
+  }
+
+  .player-bar {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .player-title {
+    font-size: 13px;
+  }
+
+  .player-ep {
+    display: none;
+  }
+
+  #sub-menu {
+    right: 10px;
+    bottom: 64px;
+    width: 200px;
+  }
+}
+
+/* A phone turned on its side has almost no height: the episode list would eat
+   the picture, so playing takes the whole screen and the list waits. */
+@media (max-width: 900px) and (orientation: landscape) {
+  .player-side {
+    display: none;
+  }
+
+  .player-bar {
+    position: absolute;
+    z-index: 7;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to bottom, rgba(8, 10, 14, 0.9), rgba(8, 10, 14, 0));
+    opacity: 0.4;
+  }
+
+  .player-bar:hover,
+  .player-bar:focus-within {
+    opacity: 1;
+  }
+}

@@ -26,6 +26,8 @@ targets:
         MARKETING_VERSION: '1.0.0'
         CURRENT_PROJECT_VERSION: '1'
         TARGETED_DEVICE_FAMILY: '1,2'
+        # The mark the home screen shows — see WiSFilm/Assets.xcassets.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_UILaunchStoryboardName: ''
         SWIFT_VERSION: '5.0'
         # Nothing here is signed on a runner; a device build needs an Apple account.

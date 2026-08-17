@@ -865,24 +865,7 @@ function drawDetail(movie, episodes) {
     box.appendChild(el('div', 'trailer-head', 'Trailer'));
 
     const frame = el('div', 'trailer-frame');
-    const view = document.createElement('webview');
-    /* Not handed to WiSGuest: on Android that stands in for the film's player,
-       and a trailer must not be able to take that over. */
-    /* Its own partition, deliberately. Guests sharing one partition share a
-       renderer, and a YouTube page busy in the background left the film's own
-       guest waiting to come up — the film would not start at all. */
-    view.setAttribute('partition', 'persist:trailer');
-    view.setAttribute('allowpopups', 'false');
-    view.addEventListener('dom-ready', () => startTrailer(view));
-    frame.appendChild(view);
-
-    /* Through the app's own loopback page when it is up — that is what gives the
-       embed a real origin, and the embed is what comes without adverts. The watch
-       page is the fallback: it always plays, adverts and all. */
-    trailerSource(trailerId).then((src) => {
-      if (view.isConnected) view.setAttribute('src', src);
-    });
-
+    frame.appendChild(trailerPlayer(trailerId));
     box.appendChild(frame);
     page.appendChild(box);
   }
@@ -1035,6 +1018,58 @@ function youtubeId(url) {
    The watch page needs no origin and always plays, but it comes with adverts that
    cannot be got rid of from outside: the player holds the speed at 1 and refuses
    to seek while one is running. It is the fallback, not the choice. */
+/* Which of the two a platform gets depends on the origin its interface runs from.
+   The phone and television shells serve theirs over a real https origin, so an
+   ordinary iframe is all a trailer needs there — the embed is satisfied, and
+   nothing native has to be placed or torn down. Electron's window is file://,
+   where that same embed answers "Error 153" and stops, so the desktop keeps its
+   guest view pointed at the app's own loopback page. */
+function trailerPlayer(id) {
+  if (window.WiSNative) {
+    const frame = document.createElement('iframe');
+    frame.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+    frame.setAttribute('allowfullscreen', 'true');
+    frame.src =
+      `https://www.youtube-nocookie.com/embed/${id}` +
+      '?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3' +
+      '&cc_load_policy=0&enablejsapi=1';
+
+    /* Muted is the only way an embed is allowed to start. None of YouTube's own
+       script is loaded to undo that — this page's policy forbids outside script —
+       but the player takes the same commands as messages. */
+    frame.addEventListener('load', () => {
+      const say = (func) => {
+        try {
+          frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args: [] }), '*');
+        } catch {
+          /* not up yet; the next nudge will do */
+        }
+      };
+      let tries = 0;
+      const timer = setInterval(() => {
+        if (!frame.isConnected || ++tries > 8) return clearInterval(timer);
+        say('playVideo');
+        say('unMute');
+      }, 700);
+    });
+
+    return frame;
+  }
+
+  const view = document.createElement('webview');
+  /* Not handed to WiSGuest: on the shells that stands in for the film's player,
+     and a trailer must not be able to take that over. Its own partition, too —
+     guests sharing one share a renderer, and a busy YouTube page left the film's
+     own guest waiting to come up. */
+  view.setAttribute('partition', 'persist:trailer');
+  view.setAttribute('allowpopups', 'false');
+  view.addEventListener('dom-ready', () => startTrailer(view));
+  trailerSource(id).then((src) => {
+    if (view.isConnected) view.setAttribute('src', src);
+  });
+  return view;
+}
+
 let trailerHost = null;
 
 async function trailerSource(id) {
@@ -1049,15 +1084,28 @@ async function trailerSource(id) {
    the film, back to the grid, or on to another title. Tearing the guest down
    rather than pausing it is what makes the sound stop for certain. */
 function stopTrailer() {
-  const view = document.querySelector('.trailer-frame webview');
+  // Either kind: a guest view on the desktop, an iframe on the shells.
+  const view = document.querySelector('.trailer-frame webview, .trailer-frame iframe');
   if (!view) return;
-  try {
-    view
-      .executeJavaScript('(() => { const v = document.querySelector("video"); if (v) { v.pause(); v.muted = true; } return true; })()')
-      .catch(() => {});
-  } catch {
-    /* not up yet; removing it is enough */
+
+  if (view.executeJavaScript) {
+    try {
+      view
+        .executeJavaScript('(() => { const v = document.querySelector("video"); if (v) { v.pause(); v.muted = true; } return true; })()')
+        .catch(() => {});
+    } catch {
+      /* not up yet; removing it is enough */
+    }
+  } else if (view.contentWindow) {
+    // An embed in a frame of its own takes commands by message; being removed
+    // stops it anyway, but a paused player makes no sound on the way out.
+    try {
+      view.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+    } catch {
+      /* another origin and not listening: the removal below is enough */
+    }
   }
+
   view.remove();
 }
 

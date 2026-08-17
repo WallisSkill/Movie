@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What a launcher from Android 8 onwards uses: the mark on the app's own
+     backdrop, inset so any mask a launcher applies — circle, squircle, rounded
+     square — cuts background rather than logo. The plain PNGs alongside are for
+     everything older. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
