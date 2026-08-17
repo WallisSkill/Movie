@@ -157,18 +157,39 @@ jobs:
 
       - run: find files -type f -exec ls -lh {} \;
 
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: files/**/*
-          generate_release_notes: false
-          body: |
-            WiSFilm — ứng dụng xem phim.
+      # Published with the CLI the runner already carries, and retried: the action
+      # that used to do this failed twice on a run whose three builds were all
+      # green, leaving finished files with nowhere to go.
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -e
+          notes=$(cat <<'EOF'
+          WiSFilm — ứng dụng xem phim.
 
-            | Nền tảng | Tệp |
-            |---|---|
-            | Windows | `WiSFilm Setup *.exe` (bản cài) · `WiSFilm *.exe` (portable) |
-            | Android (điện thoại) | `WiSFilm-android-phone.apk` |
-            | Android TV | `WiSFilm-androidtv.apk` |
-            | iOS | `WiSFilm-ios-unsigned.ipa` (chưa ký) |
+          | Nền tảng | Tệp |
+          |---|---|
+          | Windows | `WiSFilm Setup *.exe` (bản cài) · `WiSFilm *.exe` (portable) |
+          | Android (điện thoại) | `WiSFilm-android-phone.apk` |
+          | Android TV | `WiSFilm-androidtv.apk` |
+          | iOS | `WiSFilm-ios-unsigned.ipa` (chưa ký) |
 
-            Bản iOS chưa ký: cài lên máy thật cần tự ký bằng tài khoản Apple.
+          Bản iOS chưa ký: cài lên máy thật cần tự ký bằng tài khoản Apple.
+          EOF
+          )
+
+          mapfile -t assets < <(find files -type f)
+          echo "publishing ${#assets[@]} files as $TAG"
+
+          for attempt in 1 2 3; do
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              gh release upload "$TAG" "${assets[@]}" --clobber && exit 0
+            else
+              gh release create "$TAG" "${assets[@]}" --title "$TAG" --notes "$notes" && exit 0
+            fi
+            echo "attempt $attempt did not take; waiting"
+            sleep $((attempt * 20))
+          done
+          exit 1
