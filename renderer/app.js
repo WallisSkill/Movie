@@ -1921,9 +1921,16 @@ function subtitleControls() {
   ];
 }
 
-// The panel is gone, so the two things worth changing about a subtitle ride on
-// the notice itself: where the line sits, and whether it runs early or late.
+/* The two things worth changing about a subtitle — where the line sits, whether it
+   runs early or late — ride on the notice itself, since there is no panel.
+
+   Not on a handset or a television, though: there the strip sat over the picture
+   with controls nobody had asked for, and it was in the way. The keys still work
+   for anyone who wants them. */
+const quietSubtitles = () => !!window.WiSNative;
+
 function subtitleNotice(message) {
+  if (quietSubtitles()) return;
   showPlayerNotice(message, { sticky: true, actions: subtitleControls(), kind: 'subs' });
 }
 
@@ -2002,6 +2009,7 @@ async function restoreSubtitle() {
   const res = await window.WiSSubs.useSaved(saved[0]);
   if (!res.ok) return false;
   subsIntroduced = true;
+  if (quietSubtitles()) return true; // nothing over the picture on a handset
   showPlayerNotice(`Đã dùng phụ đề đã lưu: ${saved[0].name} (${res.cues} dòng)`, {
     actions: subtitleControls(),
     kind: 'subs',
@@ -2088,7 +2096,11 @@ function watchAddedSubtitles() {
     // keeping: next time this film opens it is already there.
     if (!preferred) rememberSubtitle();
 
-    // The controls introduce themselves once, then keep out of the picture.
+    // The controls introduce themselves once, then keep out of the picture — and
+    // on a handset or a television they never appear at all.
+    if (quietSubtitles()) {
+      return;
+    }
     if (first) {
       showPlayerNotice('Phụ đề: ▲▼ đổi vị trí · Shift+↑↓ bất cứ lúc nào', {
         actions: subtitleControls(),
@@ -2221,6 +2233,9 @@ function closePlayer() {
   showPlayerNotice('');
   window.WiSSubs.detach();
   dropPlayerView(); // tear the webview down so audio stops
+  // On the shells the picture is a view of its own: told twice, so a slip in the
+  // bookkeeping cannot leave it over everything with no way past it.
+  if (window.WiSGuest && window.WiSGuest.drop) window.WiSGuest.drop();
   playerCtx = null;
   // Out of the film is back to a column: the detail page is read upright.
   faceTheFilm(false);

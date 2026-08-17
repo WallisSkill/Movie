@@ -133,6 +133,19 @@
       return el;
     },
 
+    /* Belt and braces on the way out of a film. Normally the element's own remove()
+       tells the shell to take the picture down, but if that bookkeeping ever slips
+       the picture stays over everything and the film cannot be left. Saying it
+       twice costs nothing: the shell's own drop is harmless when there is nothing
+       to drop. */
+    drop() {
+      try {
+        native.playerDrop();
+      } catch {
+        /* nothing mounted */
+      }
+    },
+
     /* Full screen on a handset means sideways, and no system bars. Neither is
        something a page can decide for itself, so the shell is asked. */
     fullscreen(on) {

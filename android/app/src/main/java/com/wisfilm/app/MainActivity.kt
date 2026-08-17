@@ -102,6 +102,7 @@ class MainActivity : Activity() {
         view.layoutParams = FrameLayout.LayoutParams(1, 1)
         guest = view
         root.addView(view)
+        showExit()
         notice?.let { root.bringChildToFront(it) }
 
         // A film should not be interrupted by the screen going out.
@@ -109,7 +110,48 @@ class MainActivity : Activity() {
         view.loadUrl(url)
     }
 
+    /* ------------------------------------------------------------ the way out */
+
+    /* The page draws its own bar with a way out of a film, and on this platform
+     * that bar is HTML while the picture is a view laid over it: get the placement
+     * of the picture even slightly wrong and the way out is underneath it, which is
+     * how a film became impossible to leave. A native button cannot be covered by
+     * a native view above it, so this one is the guarantee. It only exists while a
+     * film does. */
+    private var exit: Button? = null
+
+    private fun showExit() {
+        if (exit != null) return
+
+        val button = Button(this)
+        button.text = "✕"
+        button.setTextColor(Color.WHITE)
+        button.setBackgroundColor(0x99000000.toInt())
+        button.textSize = 16f
+        button.setPadding(0, 0, 0, 0)
+        button.setOnClickListener {
+            // The page decides what leaving means — out of full screen, out of the
+            // film, back through the views — and answers false when there is
+            // nothing left to leave.
+            host.evaluateJavascript("window.__wisBack ? window.__wisBack() : false", null)
+        }
+
+        val size = dp(38)
+        val params = FrameLayout.LayoutParams(size, size)
+        params.gravity = Gravity.TOP or Gravity.START
+        params.leftMargin = dp(10)
+        params.topMargin = dp(10)
+        root.addView(button, params)
+        exit = button
+    }
+
+    private fun hideExit() {
+        exit?.let { root.removeView(it) }
+        exit = null
+    }
+
     fun dropGuest() {
+        hideExit()
         guest?.let { view ->
             root.removeView(view)
             view.stopLoading()

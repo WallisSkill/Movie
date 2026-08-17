@@ -110,6 +110,13 @@ final class ShellViewController: UIViewController {
         web.scrollView.backgroundColor = playback ? .black : backdrop
         web.scrollView.bounces = false
         web.allowsBackForwardNavigationGestures = false
+        /* No inset of iOS's own: the page is laid out to the edges on purpose and
+         * keeps its own content clear of the notch. An inset added here would shift
+         * everything down, and the rect the page reports for the picture would no
+         * longer be where the picture is put — which is how the way out of a film
+         * ends up underneath it. */
+        web.scrollView.contentInsetAdjustmentBehavior = .never
+        web.insetsLayoutMarginsFromSafeArea = false
         return web
     }
 
@@ -123,13 +130,57 @@ final class ShellViewController: UIViewController {
         view.addSubview(web)
         if let notice = notice { view.bringSubviewToFront(notice) }
         guest = web
+        showExit()
 
         // A film should not be interrupted by the screen going out.
         UIApplication.shared.isIdleTimerDisabled = true
         web.load(URLRequest(url: target))
     }
 
+    /* ---------------------------------------------------------- the way out */
+
+    /* The page draws its own bar with a way out of a film, and here that bar is
+     * HTML while the picture is a view laid over it: place the picture even
+     * slightly wrong and the way out sits underneath it, which is how a film
+     * became impossible to leave. A native button cannot be covered by a native
+     * view above it, and this one exists only while a film does. */
+    private var exit: UIButton?
+
+    private func showExit() {
+        guard exit == nil else { return }
+
+        let button = UIButton(type: .system)
+        button.setTitle("✕", for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        button.backgroundColor = UIColor(white: 0, alpha: 0.6)
+        button.layer.cornerRadius = 19
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: #selector(exitTapped), for: .touchUpInside)
+
+        view.addSubview(button)
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 38),
+            button.heightAnchor.constraint(equalToConstant: 38),
+            button.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 10),
+            button.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+        ])
+        exit = button
+    }
+
+    @objc private func exitTapped() {
+        // The page decides what leaving means, and says so when there is nothing
+        // left to leave.
+        tellPage("window.__wisBack ? window.__wisBack() : false")
+    }
+
+    private func hideExit() {
+        exit?.removeFromSuperview()
+        exit = nil
+    }
+
     func dropGuest() {
+        hideExit()
         guest?.stopLoading()
         guest?.removeFromSuperview()
         guest = nil
