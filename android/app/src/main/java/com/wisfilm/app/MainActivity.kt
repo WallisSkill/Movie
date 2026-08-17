@@ -181,35 +181,48 @@ class MainActivity : Activity() {
      * a native view above it, so this one is the guarantee. It only exists while a
      * film does. */
     private var exit: Button? = null
+    private var subs: Button? = null
+
+    private fun overlayButton(label: String, edgeFromLeft: Int, onTap: () -> Unit): Button {
+        val button = Button(this)
+        button.text = label
+        button.setTextColor(Color.WHITE)
+        button.setBackgroundColor(0x99000000.toInt())
+        button.textSize = 14f
+        button.setPadding(0, 0, 0, 0)
+        button.setOnClickListener { onTap() }
+
+        val size = dp(38)
+        val params = FrameLayout.LayoutParams(size, size)
+        params.gravity = Gravity.TOP or Gravity.START
+        params.leftMargin = dp(edgeFromLeft)
+        params.topMargin = dp(10)
+        root.addView(button, params)
+        return button
+    }
 
     private fun showExit() {
         if (exit != null) return
 
-        val button = Button(this)
-        button.text = "✕"
-        button.setTextColor(Color.WHITE)
-        button.setBackgroundColor(0x99000000.toInt())
-        button.textSize = 16f
-        button.setPadding(0, 0, 0, 0)
-        button.setOnClickListener {
+        exit = overlayButton("✕", 10) {
             // The page decides what leaving means — out of full screen, out of the
             // film, back through the views — and answers false when there is
             // nothing left to leave.
             host.evaluateJavascript("window.__wisBack ? window.__wisBack() : false", null)
         }
 
-        val size = dp(38)
-        val params = FrameLayout.LayoutParams(size, size)
-        params.gravity = Gravity.TOP or Gravity.START
-        params.leftMargin = dp(10)
-        params.topMargin = dp(10)
-        root.addView(button, params)
-        exit = button
+        /* And a way to a subtitle that does not depend on the site's own controls.
+         * Taking over the player's CC button was tried and it does not hold: every
+         * skin names that control differently, and a touch opens its menu before a
+         * click is ever seen. A button of ours cannot be missed or covered. */
+        subs = overlayButton("CC", 56) { pickSubtitle() }
     }
 
     private fun hideExit() {
         exit?.let { root.removeView(it) }
         exit = null
+        subs?.let { root.removeView(it) }
+        subs = null
     }
 
     fun dropGuest() {

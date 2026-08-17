@@ -1694,14 +1694,24 @@ function relayGuestKeys(view) {
            tap is taken and turned into what was actually wanted: a chooser for a
            subtitle file. */
         const CC = '.jw-settings-captions, .jw-submenu-captions, .jw-icon-cc,' +
-          ' [aria-label*="caption" i], [aria-label*="subtitle" i]';
-        addEventListener('click', (event) => {
-          const hit = event.target && event.target.closest && event.target.closest(CC);
-          if (!hit) return;
-          event.preventDefault();
-          event.stopPropagation();
-          window.__wisKeys.push('CC');
-        }, true);
+          ' .bc-cc, .bc-caption, [class*="caption"], [class*="subtitle"],' +
+          ' [aria-label*="caption" i], [aria-label*="subtitle" i],' +
+          ' [aria-label*="phụ đề" i], [aria-label*="tiêu đề" i], [title*="phụ đề" i]';
+
+        /* Taken on the way down, not on the click: a touch opens the player's own
+           menu before a click is ever dispatched, and by then it is too late to
+           offer anything else. Whether this catches the control at all depends on
+           what the skin calls it, which is why the shells put a button of their own
+           over the picture rather than relying on this. */
+        ['pointerdown', 'click'].forEach((type) =>
+          addEventListener(type, (event) => {
+            const hit = event.target && event.target.closest && event.target.closest(CC);
+            if (!hit) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (type === 'pointerdown') window.__wisKeys.push('CC');
+          }, true)
+        );
 
         return 'listening';
       })()`

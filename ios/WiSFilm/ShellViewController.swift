@@ -172,27 +172,37 @@ final class ShellViewController: UIViewController {
      * became impossible to leave. A native button cannot be covered by a native
      * view above it, and this one exists only while a film does. */
     private var exit: UIButton?
+    private var subs: UIButton?
 
-    private func showExit() {
-        guard exit == nil else { return }
-
+    private func overlayButton(_ label: String, size: CGFloat, fromLeading: CGFloat, action: Selector) -> UIButton {
         let button = UIButton(type: .system)
-        button.setTitle("✕", for: .normal)
+        button.setTitle(label, for: .normal)
         button.setTitleColor(.white, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        button.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
         button.backgroundColor = UIColor(white: 0, alpha: 0.6)
-        button.layer.cornerRadius = 19
+        button.layer.cornerRadius = size / 2
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.addTarget(self, action: #selector(exitTapped), for: .touchUpInside)
+        button.addTarget(self, action: action, for: .touchUpInside)
 
         view.addSubview(button)
         NSLayoutConstraint.activate([
-            button.widthAnchor.constraint(equalToConstant: 38),
-            button.heightAnchor.constraint(equalToConstant: 38),
-            button.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 10),
+            button.widthAnchor.constraint(equalToConstant: size),
+            button.heightAnchor.constraint(equalToConstant: size),
+            button.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: fromLeading),
             button.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
         ])
-        exit = button
+        return button
+    }
+
+    private func showExit() {
+        guard exit == nil else { return }
+        exit = overlayButton("✕", size: 38, fromLeading: 10, action: #selector(exitTapped))
+
+        /* And a way to a subtitle that does not depend on the site's own controls.
+         * Taking over the player's CC button was tried and it does not hold: every
+         * skin names that control differently, and a touch opens its own menu
+         * before a click is ever seen. A button of ours cannot be missed. */
+        subs = overlayButton("CC", size: 38, fromLeading: 56, action: #selector(subsTapped))
     }
 
     @objc private func exitTapped() {
@@ -201,9 +211,15 @@ final class ShellViewController: UIViewController {
         tellPage("window.__wisBack ? window.__wisBack() : false")
     }
 
+    @objc private func subsTapped() {
+        pickSubtitle()
+    }
+
     private func hideExit() {
         exit?.removeFromSuperview()
         exit = nil
+        subs?.removeFromSuperview()
+        subs = nil
     }
 
     func dropGuest() {
