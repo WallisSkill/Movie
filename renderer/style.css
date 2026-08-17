@@ -1200,7 +1200,8 @@ body {
     display: none;
   }
 
-  .player-bar {
+  /* In a window the bar can ride on the picture and fade out of the way. */
+  html:not(.shell) .player-bar {
     position: absolute;
     z-index: 7;
     top: 0;
@@ -1210,9 +1211,26 @@ body {
     opacity: 0.4;
   }
 
-  .player-bar:hover,
-  .player-bar:focus-within {
+  html:not(.shell) .player-bar:hover,
+  html:not(.shell) .player-bar:focus-within {
     opacity: 1;
+  }
+
+  /* Inside a shell it stays in the flow, slim and solid: the picture is a view
+     above this page, so a bar floated over it could not be pressed — and there is
+     no hover on a screen you touch, so fading it would only hide the way out. */
+  html.shell .player-bar {
+    position: static;
+    opacity: 1;
+    min-height: 38px;
+    padding-top: max(4px, env(safe-area-inset-top));
+    padding-bottom: 2px;
+  }
+
+  html.shell .player-bar .icon-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
   }
 }
 

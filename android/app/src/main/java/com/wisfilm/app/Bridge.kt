@@ -171,10 +171,14 @@ class HostClient(activity: MainActivity) : WebViewClient() {
         request: WebResourceRequest?
     ): WebResourceResponse? = request?.url?.let { assets.shouldInterceptRequest(it) }
 
-    // The UI never navigates: a link that escapes it would strand the app on a
-    // page with no way back.
-    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean =
-        request?.url?.host != MainActivity.UI_HOST
+    /* The interface itself never navigates away: a link that escaped it would
+     * strand the app on a page with no way back. A frame inside it is another
+     * matter — that is how a trailer is embedded — so only the main frame is held
+     * to the rule. */
+    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+        if (request?.isForMainFrame != true) return false
+        return request.url?.host != MainActivity.UI_HOST
+    }
 }
 
 /* A watch page is a whole ad-funded site around one video: trackers, ad frames,

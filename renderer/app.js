@@ -229,6 +229,8 @@ const state = {
     subPos: 8,
   },
   scope: 'vsmov', // which catalogue the search bar is currently pointed at
+  // The film last opened, so a subtitle picked after closing it still has an owner.
+  lastFilm: null,
 };
 
 async function loadStore() {
@@ -652,21 +654,16 @@ async function render(view, push = true) {
 function subsAddRow() {
   const row = el('div', 'subs-add');
 
-  const playing = playerCtx && playerCtx.movie;
+  const target = (playerCtx && playerCtx.movie) || state.lastFilm;
   const pick = el('button', 'subs-btn use', '＋  Thêm tệp .srt / .vtt');
-  pick.disabled = !playing;
+  pick.disabled = !target;
   pick.onclick = () => $('#sub-file').click();
   row.appendChild(pick);
 
-  row.appendChild(
-    el(
-      'div',
-      'subs-hint',
-      playing
-        ? `Sẽ dùng cho: ${playing.name}`
-        : 'Mở một phim trước, rồi quay lại đây để thêm phụ đề cho phim đó.'
-    )
-  );
+  const hint = !target
+    ? 'Mở một phim trước, rồi quay lại đây để thêm phụ đề cho phim đó.'
+    : `Sẽ dùng cho: ${target.name}` + (playerCtx ? ' (đang xem)' : ' — bật khi mở lại phim');
+  row.appendChild(el('div', 'subs-hint', hint));
 
   return row;
 }
@@ -1012,6 +1009,10 @@ let playerCtx = null;
 function openPlayer(movie, servers, serverIndex, epIndex, opts) {
   stopTrailer(); // nobody wants a trailer running behind the film
   playerCtx = { movie, servers, serverIndex, epIndex, ...(opts || {}) };
+  /* Remembered past the closing of the player, because on a handset the player
+     covers the whole screen: to reach the subtitle tab a viewer has to close the
+     film first, and the file they pick there still belongs to it. */
+  if (!playerCtx.trailer) state.lastFilm = { slug: movie.slug, name: movie.name };
   playerEl.classList.remove('hidden');
   $('#player-title').textContent = movie.name;
   drawPlayerSide();
@@ -1052,35 +1053,24 @@ function youtubeId(url) {
    where that same embed answers "Error 153" and stops, so the desktop keeps its
    guest view pointed at the app's own loopback page. */
 function trailerPlayer(id) {
+  /* An embed inside a frame refuses to play unless it can see an origin it
+     trusts above it, and neither shell has one to offer: Android serves the
+     interface from appassets.androidplatform.net, iOS from a scheme of its own,
+     and both get "Error 153" for their trouble — the same answer the desktop got
+     from file://. Loaded as a page in its own right there is no embedder to
+     check, so the embed plays, and being the embed it comes without adverts. */
   if (window.WiSNative) {
-    const frame = document.createElement('iframe');
-    frame.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
-    frame.setAttribute('allowfullscreen', 'true');
-    frame.src =
+    const guest = document.createElement('webview');
+    if (window.WiSGuest) window.WiSGuest.attach(guest);
+    guest.setAttribute('partition', 'persist:trailer');
+    guest.setAttribute(
+      'src',
       `https://www.youtube-nocookie.com/embed/${id}` +
-      '?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3' +
-      '&cc_load_policy=0&enablejsapi=1';
-
-    /* Muted is the only way an embed is allowed to start. None of YouTube's own
-       script is loaded to undo that — this page's policy forbids outside script —
-       but the player takes the same commands as messages. */
-    frame.addEventListener('load', () => {
-      const say = (func) => {
-        try {
-          frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args: [] }), '*');
-        } catch {
-          /* not up yet; the next nudge will do */
-        }
-      };
-      let tries = 0;
-      const timer = setInterval(() => {
-        if (!frame.isConnected || ++tries > 8) return clearInterval(timer);
-        say('playVideo');
-        say('unMute');
-      }, 700);
-    });
-
-    return frame;
+        '?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&cc_load_policy=0'
+    );
+    // Sound, once it is running — muted is the only way it is allowed to start.
+    guest.addEventListener('dom-ready', () => startTrailer(guest));
+    return guest;
   }
 
   const view = document.createElement('webview');
@@ -1940,14 +1930,18 @@ function subtitleNotice(message) {
 
 const subsFor = (slug) => (state.store.subs || []).filter((entry) => entry.film === slug);
 
-function rememberSubtitle() {
-  if (!playerCtx) return;
-  const track = window.WiSSubs.activeTrack();
+/* film is passed when there is no player open — a file added from the tab after
+   the viewer came out of the film it belongs to. */
+function rememberSubtitle(film, cues, name) {
+  const owner = film || (playerCtx && playerCtx.movie);
+  if (!owner) return;
+
+  const track = cues ? { name, cues, offset: 0 } : window.WiSSubs.activeTrack();
   if (!track) return;
 
   const entry = {
-    film: playerCtx.movie.slug,
-    filmName: playerCtx.movie.name || playerCtx.movie.slug,
+    film: owner.slug,
+    filmName: owner.name || owner.slug,
     name: track.name,
     addedAt: new Date().toISOString(),
     offset: track.offset || 0,
@@ -1966,19 +1960,30 @@ $('#sub-file').onchange = async (event) => {
   event.target.value = ''; // the same file again should still count as a change
   if (!file) return;
 
-  if (!playerCtx) {
+  const owner = (playerCtx && playerCtx.movie) || state.lastFilm;
+  if (!owner) {
     showPlayerNotice('Mở một phim trước rồi hãy thêm phụ đề.');
     return;
   }
 
-  const res = await window.WiSSubs.addFile(file.name, await file.text());
-  if (!res.ok) {
-    showPlayerNotice('Tệp này không đọc được (chỉ nhận .srt hoặc .vtt).');
-    return;
+  const text = await file.text();
+
+  /* With the film on screen the file goes straight on. Off screen — which is how
+     it happens on a handset, where reaching this tab means leaving the film — it
+     is only parsed and kept, and it goes on by itself the next time that film is
+     opened. */
+  if (playerCtx) {
+    const res = await window.WiSSubs.addFile(file.name, text);
+    if (!res.ok) return showPlayerNotice('Tệp này không đọc được (chỉ nhận .srt hoặc .vtt).');
+    rememberSubtitle();
+    subtitleNotice(`Đã nạp phụ đề từ tệp (${res.cues} dòng).`);
+  } else {
+    const cues = window.WiSSubs.parse(text);
+    if (!cues.length) return showPlayerNotice('Tệp này không đọc được (chỉ nhận .srt hoặc .vtt).');
+    rememberSubtitle(owner, cues, 'Tệp: ' + file.name);
+    showPlayerNotice(`Đã lưu phụ đề cho ${owner.name} (${cues.length} dòng) — mở phim là tự bật.`);
   }
 
-  rememberSubtitle();
-  subtitleNotice(`Đã nạp phụ đề từ tệp (${res.cues} dòng).`);
   if (state.view && state.view.kind === 'subs') renderSubsTab();
 };
 

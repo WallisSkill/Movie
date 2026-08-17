@@ -409,6 +409,10 @@
       return activate(id);
     },
 
+    /* Reading a file without a film on screen: the cues are wanted, the drawing is
+       not — there is nothing to draw them over yet. */
+    parse: (text) => parseCues(text),
+
     // A file off the disk is just another track, and the one the viewer picked.
     async addFile(name, text) {
       const cues = parseCues(text);

@@ -134,6 +134,11 @@
 
   window.api = api;
   window.WiSPlatform = 'android';
+  /* The stylesheet needs to know it is inside a shell: the player there is a view
+     of its own laid over this page, so anything the page floats on top of the
+     picture — the bar with the way out of a film, for one — would be underneath
+     it and impossible to press. */
+  document.documentElement.classList.add('shell');
   catalog.warmUp();
 
   /* The shell trims the watch page's own weight while a film plays, which means
