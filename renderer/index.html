@@ -2,6 +2,15 @@
 <html lang="vi">
   <head>
     <meta charset="utf-8" />
+    <!-- Without this a phone lays the page out at about 980px and scales the
+         result down: everything is small, and every rule written for a narrow
+         screen is skipped, because the viewport never reports a narrow one.
+         viewport-fit=cover is what lets the layout reach under a notch, which the
+         safe-area padding in the stylesheet then keeps content out of. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src https://www.youtube-nocookie.com https://www.youtube.com http://127.0.0.1:*"

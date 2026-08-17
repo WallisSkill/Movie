@@ -1207,3 +1207,149 @@ body {
     opacity: 1;
   }
 }
+
+/* ------------------------------------------------- notch and home indicator */
+
+/* With viewport-fit=cover the layout reaches the edges of the screen, which on a
+   phone means under the notch and under the bar at the bottom. These put the
+   content back inside the part that is actually visible — and cost nothing on a
+   screen with no insets, where every one of them resolves to zero. */
+#sidebar {
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-left: max(10px, env(safe-area-inset-left));
+}
+
+#topbar {
+  padding-right: max(20px, env(safe-area-inset-right));
+}
+
+#content {
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+
+.player-bar {
+  padding-top: max(10px, env(safe-area-inset-top));
+  padding-left: max(14px, env(safe-area-inset-left));
+  padding-right: max(14px, env(safe-area-inset-right));
+}
+
+.player-side {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (max-width: 760px) {
+  #sidebar {
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+
+  #topbar {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  #content {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+}
+
+/* A phone on its side gives the film the whole screen, so the picture must not be
+   pushed down by a bar or in from the notch: the bar floats over it (see above)
+   and the stage takes everything. */
+@media (max-width: 900px) and (orientation: landscape) {
+  .player-stage {
+    padding: 0;
+  }
+
+  .player-bar {
+    padding-top: max(6px, env(safe-area-inset-top));
+  }
+}
+
+/* --------------------------------------------------- nav on a small screen */
+
+/* A strip that scrolls sideways hides most of itself: on a phone eight of the ten
+   places to go sat off the edge of the screen with nothing to say so. Instead the
+   bar shows the name, and tapping it drops the whole list down as a sheet — the
+   logo is the handle, so nothing new has to be added to the screen to reach it. */
+@media (max-width: 760px) {
+  #sidebar {
+    flex-wrap: wrap;
+    overflow: visible;
+    row-gap: 0;
+  }
+
+  .brand {
+    cursor: pointer;
+    /* A caret, so it reads as something that opens. */
+    position: relative;
+    padding-right: 18px;
+  }
+
+  .brand::after {
+    content: '▾';
+    position: absolute;
+    right: 2px;
+    bottom: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  #sidebar.open .brand::after {
+    content: '▴';
+  }
+
+  /* Closed: only the name. Open: everything, in a grid that fits the width. */
+  #sidebar > :not(.brand) {
+    display: none;
+  }
+
+  #sidebar.open {
+    position: absolute;
+    z-index: 30;
+    top: 0;
+    left: 0;
+    right: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  }
+
+  #sidebar.open > :not(.brand) {
+    display: flex;
+  }
+
+  /* Three across on a phone rather than two: the sheet then covers half the
+     screen instead of two thirds. */
+  #sidebar.open .nav,
+  #sidebar.open #nav-hh3d .nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  #sidebar.open .nav button,
+  #sidebar.open .nav-toggle {
+    padding: 10px 10px;
+    font-size: 13.5px;
+  }
+
+  #sidebar.open #nav-hh3d {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-left: 0;
+    padding-top: 10px;
+    margin-top: 4px;
+  }
+
+  /* Inside the sheet the panels can simply sit in the flow again. */
+  #sidebar.open .nav-sub.open {
+    position: static;
+    max-height: 40vh;
+  }
+}

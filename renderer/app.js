@@ -2251,8 +2251,35 @@ async function stampBuild() {
   window.WiSBuild = text;
 }
 
+/* On a phone the navigation is a sheet rather than a column, and the name at the
+   top is its handle — see the stylesheet. Nothing is added to the screen for it:
+   the brand was already there, and on a wide window this does nothing at all. */
+function wireMobileNav() {
+  const narrow = () => window.matchMedia('(max-width: 760px)').matches;
+  const sidebar = $('#sidebar');
+  const brand = document.querySelector('.brand');
+  if (!brand) return;
+
+  brand.onclick = () => {
+    if (narrow()) sidebar.classList.toggle('open');
+  };
+
+  // Going somewhere is the end of choosing where to go.
+  sidebar.addEventListener('click', (event) => {
+    if (event.target.closest('.brand')) return;
+    if (event.target.closest('button') && !event.target.closest('.nav-toggle')) {
+      sidebar.classList.remove('open');
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (!narrow()) sidebar.classList.remove('open');
+  });
+}
+
 (async function boot() {
   buildSidebar();
+  wireMobileNav();
   await loadStore();
   stampBuild();
   syncFillButton();
