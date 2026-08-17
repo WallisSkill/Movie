@@ -26,26 +26,18 @@ jobs:
       - name: Install dependencies
         run: npm ci || npm install
 
-      # The same recipe the Windows workflow proved: keep the builder's own output,
-      # and stop it hunting for a certificate it will never find.
+      # No redirection here, deliberately. Piping a native tool's stderr through
+      # PowerShell turns every line it writes into an error record and fails the
+      # step even when the build succeeded — which is exactly what happened, and
+      # why the other workflow only looked green: it tolerated the failure.
       - name: Build installer and portable
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          DEBUG: 'electron-builder'
-        run: |
-          npx electron-builder --win nsis portable --x64 2>&1 | Tee-Object -FilePath build.log
+        run: npx electron-builder --win nsis portable --x64
 
-      - name: What the builder said
+      - name: What came out
         if: always()
-        run: |
-          if (Test-Path build.log) { Get-Content build.log -Tail 80 }
-
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: windows-build-log
-          path: build.log
-          if-no-files-found: warn
+        run: if (Test-Path dist) { Get-ChildItem dist -File | Select-Object Name,Length | Format-Table -AutoSize }
 
       - uses: actions/upload-artifact@v4
         with:

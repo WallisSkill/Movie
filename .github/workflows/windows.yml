@@ -32,28 +32,19 @@ jobs:
           node --check renderer/guest-android.js
           node --check renderer/tv.js
 
+      # Nothing here is signed, and letting the builder hunt for a certificate is a
+      # common way for this step to die on a runner. The output is not redirected:
+      # piping a native tool's stderr through PowerShell turns each line into an
+      # error record and fails the step even when the build worked, which is what
+      # made this look broken before — and what the tolerated failure was hiding.
       - name: Build installer and portable
         env:
-          # Nothing here is signed, and letting the builder hunt for a certificate
-          # is a common way for this step to die on a runner.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          DEBUG: 'electron-builder'
-        run: |
-          npx electron-builder --win nsis portable --x64 2>&1 | Tee-Object -FilePath build.log
-        continue-on-error: true
+        run: npx electron-builder --win nsis portable --x64
 
-      - name: What the builder said
+      - name: What came out
         if: always()
-        run: |
-          if (Test-Path build.log) { Get-Content build.log -Tail 120 }
-          if (Test-Path dist) { Get-ChildItem dist | Select-Object Name,Length | Format-Table -AutoSize }
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: WiSFilm-windows-build-log
-          path: build.log
-          if-no-files-found: warn
+        run: if (Test-Path dist) { Get-ChildItem dist -File | Select-Object Name,Length | Format-Table -AutoSize }
 
       - uses: actions/upload-artifact@v4
         with:
