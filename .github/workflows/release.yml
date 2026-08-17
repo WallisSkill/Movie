@@ -23,11 +23,30 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      # The same recipe the Windows workflow proved: keep the builder's own output,
+      # and stop it hunting for a certificate it will never find.
       - name: Build installer and portable
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --win nsis portable --x64
+          DEBUG: 'electron-builder'
+        run: |
+          npx electron-builder --win nsis portable --x64 2>&1 | Tee-Object -FilePath build.log
+
+      - name: What the builder said
+        if: always()
+        run: |
+          if (Test-Path build.log) { Get-Content build.log -Tail 80 }
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: windows-build-log
+          path: build.log
+          if-no-files-found: warn
+
       - uses: actions/upload-artifact@v4
         with:
           name: windows
@@ -105,6 +124,18 @@ jobs:
           cp -R build/Build/Products/Release-iphoneos/WiSFilm.app Payload/
           zip -qry WiSFilm-ios-unsigned.ipa Payload
           ls -lh WiSFilm-ios-unsigned.ipa
+
+      # An app that built is not an app that carries the interface: without the www
+      # folder inside it there would be nothing to show, and the size alone will not
+      # say so. This is where that gets checked.
+      - name: Is the interface inside it?
+        working-directory: ios
+        run: |
+          echo "--- app bundle ---"
+          find Payload/WiSFilm.app -maxdepth 2 | head -30
+          echo "--- interface ---"
+          ls -R Payload/WiSFilm.app/www 2>/dev/null | head -20 || echo "MISSING: www is not in the bundle"
+          test -f Payload/WiSFilm.app/www/renderer/index.html || (echo "the interface is missing from the ipa" && exit 1)
 
       - uses: actions/upload-artifact@v4
         with:
