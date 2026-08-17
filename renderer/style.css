@@ -1361,3 +1361,18 @@ body {
     max-height: 40vh;
   }
 }
+
+/* Adding a subtitle from the tab rather than from the player, which is the only
+   way there is on a handset. */
+.subs-add {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.subs-hint {
+  font-size: 12.5px;
+  color: var(--muted);
+}

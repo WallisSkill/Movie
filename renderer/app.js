@@ -645,16 +645,43 @@ async function render(view, push = true) {
    it is wanted at all. The films' own subtitles are not listed — they are not
    ours to keep or to change, and they will be on the page next time regardless. */
 
+/* Adding one from here, not only from the player. On a handset the player's own
+   way of attaching a subtitle is out of reach — which is what made it impossible
+   to add one at all on a phone — and this button always is. It needs a film on
+   screen to belong to, so it says so when there is none. */
+function subsAddRow() {
+  const row = el('div', 'subs-add');
+
+  const playing = playerCtx && playerCtx.movie;
+  const pick = el('button', 'subs-btn use', '＋  Thêm tệp .srt / .vtt');
+  pick.disabled = !playing;
+  pick.onclick = () => $('#sub-file').click();
+  row.appendChild(pick);
+
+  row.appendChild(
+    el(
+      'div',
+      'subs-hint',
+      playing
+        ? `Sẽ dùng cho: ${playing.name}`
+        : 'Mở một phim trước, rồi quay lại đây để thêm phụ đề cho phim đó.'
+    )
+  );
+
+  return row;
+}
+
 function renderSubsTab() {
   content.innerHTML = '';
   const saved = state.store.subs || [];
+  content.appendChild(subsAddRow());
 
   if (!saved.length) {
     content.appendChild(
       el(
         'div',
         'state',
-        'Chưa có phụ đề nào được thêm. Trong lúc xem, gắn tệp phụ đề bằng nút CC của trình phát — WiSFilm sẽ vẽ và lưu lại ở đây.'
+        'Chưa có phụ đề nào được thêm. Thêm tệp ở trên, hoặc gắn bằng nút CC của trình phát trong lúc xem — WiSFilm sẽ vẽ và lưu lại ở đây.'
       )
     );
     return;
@@ -1931,6 +1958,29 @@ function rememberSubtitle() {
   state.store.subs = [entry, ...kept].slice(0, 24);
   saveStore();
 }
+
+/* The picker's own end of it: read the file, draw it, keep it for this film. The
+   input lives outside the tab so the tab can be redrawn without losing it. */
+$('#sub-file').onchange = async (event) => {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = ''; // the same file again should still count as a change
+  if (!file) return;
+
+  if (!playerCtx) {
+    showPlayerNotice('Mở một phim trước rồi hãy thêm phụ đề.');
+    return;
+  }
+
+  const res = await window.WiSSubs.addFile(file.name, await file.text());
+  if (!res.ok) {
+    showPlayerNotice('Tệp này không đọc được (chỉ nhận .srt hoặc .vtt).');
+    return;
+  }
+
+  rememberSubtitle();
+  subtitleNotice(`Đã nạp phụ đề từ tệp (${res.cues} dòng).`);
+  if (state.view && state.view.kind === 'subs') renderSubsTab();
+};
 
 // Opening a film it was attached to: the newest one goes straight on, so nobody
 // has to find the file again.
