@@ -51,13 +51,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - run: sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
-      - uses: gradle/actions/setup-gradle@v4
+
+      # No third-party actions here on purpose. A run was lost to GitHub answering
+      # 429 while fetching them, and this runner already carries everything needed:
+      # a JDK, the Android SDK and Gradle. Fewer downloads, fewer ways to fail.
+      - name: Use what the runner already has
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          $JAVA_HOME_17_X64/bin/java -version
+          gradle --version | head -5
+
+      - name: Platform and build tools
+        run: yes | sdkmanager --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
 
       # Two flavours from one codebase: a phone build and a leanback one.
       - name: Build both APKs
