@@ -1643,6 +1643,7 @@ function mountPlayerView(url) {
     // Nothing can be injected before this point: the guest is not there to
     // listen yet.
     relayGuestKeys(view);
+    freeFileInputs(view);
     watchGuestKeys();
     watchAddedSubtitles();
     offerResume();
@@ -1669,6 +1670,33 @@ function mountPlayerView(url) {
    way for it to hand them over. What it can do is write them down where the host
    can read them, which is what this pair does — the same trick as the seek
    guard, and the reason Esc still leaves fullscreen when the film has the focus. */
+/* The player's own panel offers to take a subtitle file — "Choose File", a name,
+   "Tải lên" — and that input carries accept=".vtt,.srt". iOS turns an accept list
+   into the file types it knows, and it knows neither of those, so the chooser
+   opens with nothing in it that can be picked. Taking the list off leaves the
+   viewer free to pick the file they came for; the player still reads it the same
+   way. The panel is rebuilt as it opens and closes, so this watches for it. */
+function freeFileInputs(view) {
+  view
+    .executeJavaScript(
+      `(() => {
+        if (window.__wisFreeFiles) return 'already';
+        window.__wisFreeFiles = true;
+
+        const free = () => {
+          document.querySelectorAll('input[type=file][accept]').forEach((input) => {
+            input.removeAttribute('accept');
+          });
+        };
+
+        free();
+        new MutationObserver(free).observe(document.documentElement, { childList: true, subtree: true });
+        return 'freed';
+      })()`
+    )
+    .catch(() => {});
+}
+
 function relayGuestKeys(view) {
   view
     .executeJavaScript(
@@ -1963,7 +1991,10 @@ function rememberSubtitle(film, cues, name) {
     cues: track.cues,
   };
 
-  const kept = (state.store.subs || []).filter((held) => !(held.film === entry.film && held.name === entry.name));
+  /* One subtitle per film, replaced rather than added to: picking a new file means
+     the old one was not the one wanted, and a list that grows a copy per attempt is
+     a list nobody can read. */
+  const kept = (state.store.subs || []).filter((held) => held.film !== entry.film);
   state.store.subs = [entry, ...kept].slice(0, 24);
   saveStore();
 }

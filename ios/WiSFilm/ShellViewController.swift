@@ -161,6 +161,10 @@ final class ShellViewController: UIViewController {
         picker.allowsMultipleSelection = false
         picker.delegate = self
         picker.modalPresentationStyle = .formSheet
+        /* Opened at the app's own folder, which is where a subtitle copied in
+           through Files lands — otherwise the chooser starts wherever it left off
+           and the file has to be found by hand each time. */
+        picker.directoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
         present(picker, animated: true)
     }
 

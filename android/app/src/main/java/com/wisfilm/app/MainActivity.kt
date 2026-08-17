@@ -4,9 +4,11 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import android.os.Build
 import android.graphics.Color
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
@@ -15,6 +17,8 @@ import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.widget.Button
 import android.widget.FrameLayout
@@ -101,6 +105,21 @@ class MainActivity : Activity() {
 
         val view = buildWebView(playbackView = true)
         view.webViewClient = GuestClient(this)
+        /* Without a chrome client a WebView cannot open a file chooser at all:
+         * the player's own "Choose File" for a subtitle simply did nothing when
+         * pressed. This is what makes that button work. */
+        view.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView?,
+                callback: ValueCallback<Array<Uri>>?,
+                params: FileChooserParams?
+            ): Boolean {
+                pendingFiles?.onReceiveValue(null)
+                pendingFiles = callback
+                openFileChooser()
+                return true
+            }
+        }
         view.layoutParams = FrameLayout.LayoutParams(1, 1)
         guest = view
         root.addView(view)
@@ -127,6 +146,31 @@ class MainActivity : Activity() {
 
     /* ------------------------------------------------------- choosing a file */
 
+    /* The chooser the player's own "Choose File" ends up in. Its answer goes back
+     * to the page through the callback the chrome client handed over, so the
+     * player's own upload — name field, "Tải lên" and all — carries on as written. */
+    private var pendingFiles: ValueCallback<Array<Uri>>? = null
+
+    private fun openFileChooser() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val downloads = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:Download"
+                )
+                putExtra(DocumentsContract.EXTRA_INITIAL_URI, downloads)
+            }
+        }
+        try {
+            startActivityForResult(intent, PICK_FOR_PAGE)
+        } catch (err: Throwable) {
+            pendingFiles?.onReceiveValue(null)
+            pendingFiles = null
+        }
+    }
+
     /* The system's own chooser, which opens in Files. A web page's file input is
      * given an accept list, and the list is what sends it to photos and video —
      * there is no system type for a .srt, so nothing there could be picked. */
@@ -138,6 +182,17 @@ class MainActivity : Activity() {
                 Intent.EXTRA_MIME_TYPES,
                 arrayOf("text/plain", "text/vtt", "application/x-subrip", "application/octet-stream")
             )
+
+            /* Opened at Downloads, because that is where a subtitle just fetched
+               from the web is. The chooser otherwise starts at Recent, where it
+               is not, and the folder has to be found by hand every time. */
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val downloads = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:Download"
+                )
+                putExtra(DocumentsContract.EXTRA_INITIAL_URI, downloads)
+            }
         }
         try {
             startActivityForResult(intent, PICK_SUBTITLE)
@@ -150,6 +205,16 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         @Suppress("DEPRECATION")
         super.onActivityResult(requestCode, resultCode, data)
+
+        // The page asked for this one through its own file input: hand it straight
+        // back, and let the player's upload go on as it was written.
+        if (requestCode == PICK_FOR_PAGE) {
+            val chosen = data?.data
+            pendingFiles?.onReceiveValue(if (resultCode == RESULT_OK && chosen != null) arrayOf(chosen) else null)
+            pendingFiles = null
+            return
+        }
+
         if (requestCode != PICK_SUBTITLE || resultCode != RESULT_OK) return
 
         val uri = data?.data ?: return
@@ -181,7 +246,6 @@ class MainActivity : Activity() {
      * a native view above it, so this one is the guarantee. It only exists while a
      * film does. */
     private var exit: Button? = null
-    private var subs: Button? = null
 
     private fun overlayButton(label: String, edgeFromLeft: Int, onTap: () -> Unit): Button {
         val button = Button(this)
@@ -211,18 +275,11 @@ class MainActivity : Activity() {
             host.evaluateJavascript("window.__wisBack ? window.__wisBack() : false", null)
         }
 
-        /* And a way to a subtitle that does not depend on the site's own controls.
-         * Taking over the player's CC button was tried and it does not hold: every
-         * skin names that control differently, and a touch opens its menu before a
-         * click is ever seen. A button of ours cannot be missed or covered. */
-        subs = overlayButton("CC", 56) { pickSubtitle() }
     }
 
     private fun hideExit() {
         exit?.let { root.removeView(it) }
         exit = null
-        subs?.let { root.removeView(it) }
-        subs = null
     }
 
     fun dropGuest() {
@@ -389,6 +446,9 @@ class MainActivity : Activity() {
     companion object {
         // The request code the file chooser answers under.
         private const val PICK_SUBTITLE = 4711
+
+        // What the player's own file input asks through.
+        private const val PICK_FOR_PAGE = 4712
 
         private const val BACKDROP = 0xFF0B0D12.toInt()
         private const val NOTICE_BG = 0xE6141821.toInt()
