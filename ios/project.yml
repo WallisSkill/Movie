@@ -51,3 +51,13 @@ targets:
           - audio
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+        # Picking a subtitle opens the system's own picker, which offers the photo
+        # library and the camera alongside Files. An app that has not said why it
+        # might want either is not allowed to show them — it goes black instead,
+        # which is exactly what happened.
+        NSPhotoLibraryUsageDescription: WiSFilm chỉ dùng khi bạn tự chọn tệp phụ đề từ thư viện.
+        NSCameraUsageDescription: WiSFilm không chụp ảnh; mục này chỉ có vì hộp chọn tệp của hệ thống.
+        # So a subtitle can also be copied into the app through Files and picked
+        # from there, which is the shortest route on a phone.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
