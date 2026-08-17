@@ -228,18 +228,63 @@
     }
   }
 
-  // The file sits on the guest's own origin, so the guest is the one that can
-  // read it without a cross-origin argument.
+  const wait = (ms) => new Promise((done) => setTimeout(done, ms));
+
+  // A name for the slot that is the same every time the same address is read,
+  // so a second attempt finds the answer the first one left.
+  function slotFor(url) {
+    let hash = 0;
+    for (let i = 0; i < url.length; i++) hash = (hash * 31 + url.charCodeAt(i)) | 0;
+    return '__wisRead' + (hash >>> 0).toString(36);
+  }
+
+  /* The file sits on the guest's own origin, so the guest is the one that can
+     read it without a cross-origin argument.
+
+     Read in two halves, and neither of them a promise. Electron waits for one of
+     those and hands back what it settled on; the shells do not — WebKit calls a
+     promise a result of an unsupported type and fails the call outright, Android
+     encodes the promise object itself, which comes back as nothing. Either way
+     the subtitle arrived with no lines in it, so there was nothing to draw and
+     the page's own English track was what stayed on screen. That was the whole of
+     the bug on the phone. So: ask the guest to start reading, then ask it plainly
+     what it got. */
   async function fetchCues(view, url) {
-    const text = await view.executeJavaScript(
-      `(async () => {
-        try {
-          const res = await fetch(${JSON.stringify(url)});
-          return res.ok ? await res.text() : '';
-        } catch { return ''; }
-      })()`
-    );
-    return parseCues(text);
+    const slot = slotFor(url);
+    const name = JSON.stringify(slot);
+
+    await view
+      .executeJavaScript(
+        `(() => {
+          const held = window[${name}];
+          if (held && (held.busy || typeof held.text === 'string')) return 'already';
+          window[${name}] = { busy: true, text: null };
+          fetch(${JSON.stringify(url)})
+            .then((res) => (res.ok ? res.text() : ''))
+            .then((text) => { window[${name}] = { busy: false, text: text || '' }; })
+            .catch(() => { window[${name}] = { busy: false, text: '' }; });
+          return 'reading';
+        })()`
+      )
+      .catch(() => null);
+
+    // Six seconds is longer than any of these files takes off a blob or off the
+    // site's own server, and short enough not to hang the pick on a dead address.
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const text = await view
+        .executeJavaScript(
+          `(() => {
+            const held = window[${name}];
+            return held && !held.busy ? String(held.text || '') : null;
+          })()`
+        )
+        .catch(() => null);
+
+      if (typeof text === 'string') return parseCues(text);
+      await wait(100);
+    }
+
+    return [];
   }
 
   async function activate(id) {

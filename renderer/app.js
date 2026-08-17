@@ -1633,20 +1633,19 @@ function mountPlayerView(url) {
     guardGuestSeek(view);
     applyGuestPrefs(view);
 
-    /* Subtitles are the player's own business on a handset and a television. Its
-       panel takes a file, names it and shows it, and the app has nothing to add —
-       what it had was a way of getting in the way: while WiSFilm drew a line of
-       its own it hid the player's, so a subtitle uploaded through that panel went
-       up behind a rule that kept it invisible. Here it does not draw, does not
-       hide anything, and does not put a track of its own on. */
-    if (!quietSubtitles()) {
-      // The subtitle files belong to the guest, so the list can only be read once
-      // it is up; the choice made earlier carries over.
-      window.WiSSubs
-        .attach(view, state.store.subLang, playerCtx.movie.slug, state.store.subPos)
-        .then(() => restoreSubtitle())
-        .catch(() => {});
-    }
+    /* Everywhere, including the phone. Handing subtitles back to the player there
+       was tried and it does not work: the page puts captions back to the language
+       it remembers about eighty milliseconds after anything turns them on, so a
+       file uploaded through its own panel is added, cannot be chosen, and the old
+       English track is what plays. Drawing them here is the answer to that, and
+       always was — what was actually broken on the phone is one address away, in
+       fetchCues. */
+    // The subtitle files belong to the guest, so the list can only be read once
+    // it is up; the choice made earlier carries over.
+    window.WiSSubs
+      .attach(view, state.store.subLang, playerCtx.movie.slug, state.store.subPos)
+      .then(() => restoreSubtitle())
+      .catch(() => {});
 
     restorePosition(view);
     watchPlayback(view);
@@ -1655,7 +1654,7 @@ function mountPlayerView(url) {
     relayGuestKeys(view);
     freeFileInputs(view);
     watchGuestKeys();
-    if (!quietSubtitles()) watchAddedSubtitles();
+    watchAddedSubtitles();
     offerResume();
   });
 
@@ -2349,11 +2348,8 @@ function buildSidebar() {
   [
     { kind: 'watching', label: 'Đang xem' },
     { kind: 'favorites', label: 'Yêu thích' },
-    // Subtitles brought in from outside are kept, so they need somewhere to live —
-    // in a window. On a handset and a television the player keeps its own, and a
-    // tab that could only ever be empty would be pointing at something that is
-    // not there.
-    ...(quietSubtitles() ? [] : [{ kind: 'subs', label: 'Phụ đề' }]),
+    // Subtitles brought in from outside are kept, so they need somewhere to live.
+    { kind: 'subs', label: 'Phụ đề' },
   ].forEach((entry) => {
     const btn = el('button', null, entry.label);
     btn.dataset.key = entry.kind + ':';
